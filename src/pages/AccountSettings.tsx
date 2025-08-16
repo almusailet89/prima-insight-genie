@@ -44,7 +44,7 @@ export default function AccountSettings() {
     }
   };
 
-  const downloadTechnicalReport = () => {
+  const downloadTechnicalReport = async () => {
     const reportContent = `# Prima Assicurazioni Financial Analytics Platform
 ## Technical Integration Guide for Oracle NetSuite
 

@@ -255,59 +255,37 @@ export default function ReportBuilder() {
     setIsGenerating(true);
     
     try {
-      const reportConfig = {
+      // Generate comprehensive report data using new Prima PPT generator
+      const { PrimaPPTGenerator } = await import('@/lib/ppt-generator');
+      
+      const reportData = {
         title: slides.find(s => s.type === 'title')?.title || 'Prima Finance Report',
-        template_id: template.id,
-        slides: slides,
-        filters: globalFilters,
-        branding: {
-          primaryColor: template.primary_color,
-          secondaryColor: template.secondary_color,
-          accentColor: template.accent_color,
-          fontFamily: template.heading_font
+        subtitle: `Professional Financial Analysis • ${new Date().toLocaleDateString('en-GB', { year: 'numeric', month: 'long' })}`,
+        slides: slides.map(slide => ({
+          type: slide.type as any,
+          title: slide.title || 'Slide',
+          content: slide.content,
+          data: generateMockDataForSlide(slide),
+          commentary: generateMockCommentary(slide)
+        })),
+        metadata: {
+          generatedAt: new Date().toISOString(),
+          author: 'Prima Finance Team',
+          department: 'Finance Department'
         }
       };
 
-      const response = await supabase.functions.invoke('generate-advanced-report', {
-        body: reportConfig
-      });
-
-      if (response.error) throw response.error;
-
-      // Try to save report instance if possible, but don't block generation
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase
-            .from('report_instances')
-            .insert({
-              template_id: template.id,
-              title: reportConfig.title,
-              generated_by: user.id,
-              configuration: reportConfig as any,
-              status: 'completed',
-              download_url: response.data?.downloadUrl
-            });
-        }
-      } catch (dbError) {
-        console.log('Could not save to database, but report generated successfully');
-      }
-
+      const pptGenerator = new PrimaPPTGenerator();
+      const pptx = pptGenerator.generateReport(reportData);
+      
+      const filename = `${reportData.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pptx`;
+      await pptGenerator.downloadPPT(filename);
+      
       toast({
-        title: "Report Generated",
-        description: "Your PowerPoint report has been generated successfully",
+        title: "Professional PowerPoint Generated",
+        description: "Your Prima Finance report has been generated with professional branding.",
       });
-
-      // Trigger download
-      if (response.data?.downloadUrl) {
-        const link = document.createElement('a');
-        link.href = response.data.downloadUrl;
-        link.download = `${reportConfig.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pptx`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
+      
     } catch (error) {
       console.error('Error generating report:', error);
       toast({
@@ -317,6 +295,39 @@ export default function ReportBuilder() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const generateMockDataForSlide = (slide: Slide) => {
+    switch (slide.type) {
+      case 'kpi':
+        return [
+          { name: 'Revenue', current: 2650000, previous: 2450000, variance: 0.082 },
+          { name: 'Operating Margin', current: 0.186, previous: 0.175, variance: 0.063 },
+          { name: 'Net Income', current: 492500, previous: 428750, variance: 0.149 }
+        ];
+      case 'variance':
+        return [
+          { department: 'Motor Insurance', actual: 1380000, budget: 1320000, variance: 60000, variancePercent: 0.045 },
+          { department: 'Home Insurance', actual: 820000, budget: 850000, variance: -30000, variancePercent: -0.035 }
+        ];
+      case 'forecast':
+        return [{ totalRevenue: 2950000, avgGrowth: 0.089 }];
+      default:
+        return [];
+    }
+  };
+
+  const generateMockCommentary = (slide: Slide) => {
+    switch (slide.type) {
+      case 'kpi':
+        return "Strong performance across key metrics with revenue growth of 8.2% and improved operational efficiency.";
+      case 'variance':
+        return "Motor insurance exceeds budget by 4.5% while home insurance faces competitive pressures.";
+      case 'forecast':
+        return "Full year forecast projects continued growth with strategic market expansion initiatives.";
+      default:
+        return `Professional analysis for ${slide.title} with data-driven insights.`;
     }
   };
 
