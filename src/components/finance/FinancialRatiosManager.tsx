@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,8 +6,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Trash2, Plus, Calculator, TrendingUp, Percent, DollarSign } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { Trash2, Plus, Calculator, TrendingUp, Percent, DollarSign, Upload, FileSpreadsheet, Loader2, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useDropzone } from 'react-dropzone';
+import * as XLSX from 'xlsx';
 
 interface FinancialRatio {
   id: string;
@@ -17,6 +22,11 @@ interface FinancialRatio {
   category: 'profitability' | 'efficiency' | 'liquidity' | 'leverage' | 'growth' | 'custom';
   displayFormat: 'percentage' | 'ratio' | 'currency' | 'number';
   isActive: boolean;
+}
+
+interface SuggestedRatio extends FinancialRatio {
+  confidence: number;
+  source: string;
 }
 
 interface FinancialRatiosManagerProps {
@@ -87,6 +97,10 @@ export function FinancialRatiosManager({ onRatiosChange }: FinancialRatiosManage
   });
   const [editingRatio, setEditingRatio] = useState<FinancialRatio | null>(null);
   const [isCreating, setIsCreating] = useState(false);
+  const [suggestedRatios, setSuggestedRatios] = useState<SuggestedRatio[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [selectedSuggestions, setSelectedSuggestions] = useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   useEffect(() => {
@@ -171,6 +185,122 @@ export function FinancialRatiosManager({ onRatiosChange }: FinancialRatiosManage
     }
   };
 
+  const analyzeFileForRatios = async (fileData: string, fileName: string) => {
+    setIsAnalyzing(true);
+    try {
+      const response = await fetch('https://cgvdtcmchxkbnsdgbcvz.supabase.co/functions/v1/analyze-financial-ratios', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNndmR0Y21jaHhrYm5zZGdiY3Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTUzNTk4NjUsImV4cCI6MjA3MDkzNTg2NX0.bGTEfgu5ry1-yiPp6ZMO_TtObHnoaHwKNssCGbZsJJg'}`,
+        },
+        body: JSON.stringify({
+          fileData,
+          fileName,
+          existingRatios: ratios.map(r => r.name)
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze file');
+      }
+
+      const { suggestedRatios: suggestions } = await response.json();
+      setSuggestedRatios(suggestions);
+      setShowSuggestions(true);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Found ${suggestions.length} potential financial ratios in ${fileName}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Analysis Failed",
+        description: "Unable to analyze the file for financial ratios",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const file = acceptedFiles[0];
+    if (!file) return;
+
+    try {
+      const fileData = await file.arrayBuffer();
+      let content = '';
+
+      if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const workbook = XLSX.read(fileData);
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        content = XLSX.utils.sheet_to_csv(worksheet);
+      } else if (file.name.endsWith('.csv')) {
+        content = new TextDecoder().decode(fileData);
+      } else {
+        toast({
+          title: "Unsupported File",
+          description: "Please upload Excel (.xlsx, .xls) or CSV files",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      await analyzeFileForRatios(content, file.name);
+    } catch (error) {
+      toast({
+        title: "File Read Error",
+        description: "Unable to read the uploaded file",
+        variant: "destructive",
+      });
+    }
+  }, [ratios]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: {
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'],
+      'application/vnd.ms-excel': ['.xls'],
+      'text/csv': ['.csv'],
+    },
+    multiple: false,
+  });
+
+  const handleSuggestionToggle = (suggestionId: string) => {
+    const newSelected = new Set(selectedSuggestions);
+    if (newSelected.has(suggestionId)) {
+      newSelected.delete(suggestionId);
+    } else {
+      newSelected.add(suggestionId);
+    }
+    setSelectedSuggestions(newSelected);
+  };
+
+  const addSelectedSuggestions = () => {
+    const ratiosToAdd = suggestedRatios
+      .filter(suggestion => selectedSuggestions.has(suggestion.id))
+      .map(suggestion => ({
+        id: Date.now().toString() + Math.random().toString(),
+        name: suggestion.name,
+        formula: suggestion.formula,
+        description: suggestion.description,
+        category: suggestion.category,
+        displayFormat: suggestion.displayFormat,
+        isActive: true,
+      }));
+
+    setRatios(prev => [...prev, ...ratiosToAdd]);
+    setShowSuggestions(false);
+    setSelectedSuggestions(new Set());
+    setSuggestedRatios([]);
+    
+    toast({
+      title: "Ratios Added",
+      description: `Successfully added ${ratiosToAdd.length} financial ratios`,
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -178,10 +308,26 @@ export function FinancialRatiosManager({ onRatiosChange }: FinancialRatiosManage
           <h2 className="text-2xl font-bold">Financial Ratios & KPIs</h2>
           <p className="text-muted-foreground">Manage custom financial ratios and formulas for your reports</p>
         </div>
-        <Button onClick={createNewRatio}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Ratio
-        </Button>
+        <div className="flex gap-2">
+          <Button onClick={createNewRatio}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Ratio
+          </Button>
+          <Button variant="outline" onClick={() => document.getElementById('file-upload')?.click()}>
+            <Upload className="h-4 w-4 mr-2" />
+            Analyze File
+          </Button>
+          <input
+            id="file-upload"
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => {
+              const files = e.target.files;
+              if (files) onDrop(Array.from(files));
+            }}
+            style={{ display: 'none' }}
+          />
+        </div>
       </div>
 
       {/* Editing Form */}
@@ -285,6 +431,114 @@ export function FinancialRatiosManager({ onRatiosChange }: FinancialRatiosManage
           </CardContent>
         </Card>
       )}
+
+      {/* File Upload Drop Zone */}
+      <Card className="border-dashed border-2">
+        <CardContent className="p-8">
+          <div 
+            {...getRootProps()} 
+            className={`text-center cursor-pointer transition-colors ${
+              isDragActive ? 'bg-primary/5' : 'hover:bg-muted/50'
+            }`}
+          >
+            <input {...getInputProps()} />
+            {isAnalyzing ? (
+              <div className="flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">
+                  Analyzing file for financial ratios...
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-2">
+                <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />
+                <p className="text-sm font-medium">
+                  Drop Excel or CSV files here to auto-detect financial ratios
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  AI will analyze your data and suggest relevant financial formulas
+                </p>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Suggestions Dialog */}
+      <Dialog open={showSuggestions} onOpenChange={setShowSuggestions}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Calculator className="h-5 w-5" />
+              Suggested Financial Ratios
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              AI has detected {suggestedRatios.length} potential financial ratios in your file. 
+              Select the ones you'd like to add to your ratio library:
+            </p>
+            
+            <div className="space-y-3">
+              {suggestedRatios.map((suggestion) => (
+                <Card key={suggestion.id} className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={selectedSuggestions.has(suggestion.id)}
+                      onCheckedChange={() => handleSuggestionToggle(suggestion.id)}
+                    />
+                    <div className="flex-1 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-semibold">{suggestion.name}</h4>
+                        <Badge variant="secondary" className={getCategoryColor(suggestion.category)}>
+                          {getCategoryIcon(suggestion.category)}
+                          <span className="ml-1 capitalize">{suggestion.category}</span>
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {Math.round(suggestion.confidence * 100)}% confidence
+                        </Badge>
+                      </div>
+                      
+                      <div className="text-sm font-mono bg-muted p-2 rounded">
+                        {suggestion.formula}
+                      </div>
+                      
+                      <p className="text-sm text-muted-foreground">
+                        {suggestion.description}
+                      </p>
+                      
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Source: {suggestion.source}</span>
+                        <Separator orientation="vertical" className="h-3" />
+                        <span>Format: {suggestion.displayFormat}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="flex justify-between items-center pt-4">
+              <div className="text-sm text-muted-foreground">
+                {selectedSuggestions.size} of {suggestedRatios.length} ratios selected
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setShowSuggestions(false)}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={addSelectedSuggestions}
+                  disabled={selectedSuggestions.size === 0}
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Add Selected ({selectedSuggestions.size})
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Ratios List */}
       <div className="grid gap-4">
