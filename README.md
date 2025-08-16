@@ -1,73 +1,167 @@
-# Welcome to your Lovable project
+# Prima Finance Assistant
 
-## Project info
+A comprehensive Financial Planning & Analysis (FP&A) web application built with React, TypeScript, Supabase, and AI-powered insights.
 
-**URL**: https://lovable.dev/projects/e9a239da-e49e-4425-9dc3-af6552f6d9e8
+## 🚀 Features
 
-## How can I edit this code?
+### Core Analytics
+- **Overview Dashboard**: KPI tiles, monthly trends, variance summary
+- **Variance Analysis**: Compare actual vs budget/forecast with drill-through capabilities
+- **Sales Analysis**: Conversion funnel, retention rates, channel performance
+- **Forecasting**: Multiple methods (Moving Average, YoY, CAGR) with rolling forecasts
 
-There are several ways of editing your application.
+### AI Integration
+- **Ask Jude**: Natural language query interface for financial analysis
+- **Smart Insights**: AI-powered variance explanations and recommendations
+- **Report Generation**: Automated narrative creation and PowerPoint export
 
-**Use Lovable**
+### Data Management
+- **Import Wizard**: CSV/XLSX upload with field mapping and validation
+- **Multi-dimensional Analysis**: Business units, markets, products, channels
+- **Scenario Planning**: Create and compare multiple business scenarios
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/e9a239da-e49e-4425-9dc3-af6552f6d9e8) and start prompting.
+### Advanced Features
+- **PowerPoint Export**: Branded slide deck generation with custom themes
+- **Role-based Access**: Admin, Analyst, and Viewer permissions
+- **Audit Trail**: Complete logging of all user actions and data changes
 
-Changes made via Lovable will be committed automatically to this repo.
+## 🛠 Technology Stack
 
-**Use your preferred IDE**
+- **Frontend**: React 18, TypeScript, Tailwind CSS, shadcn/ui
+- **Backend**: Supabase (PostgreSQL, Authentication, Edge Functions)
+- **AI**: OpenAI GPT integration for natural language processing
+- **Charts**: Custom chart components for data visualization
+- **File Processing**: SheetJS for Excel/CSV parsing
+- **PPT Generation**: PptxGenJS for presentation export
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## 📊 Database Schema
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Core Tables
+- `companies`: Company information
+- `business_units`: Organizational units
+- `fact_ledger`: Main transactional data with scenarios (ACTUAL/BUDGET/FORECAST)
+- `dim_*`: Dimension tables for accounts, products, channels, markets
+- `calendar`: Time dimension with period keys
 
-Follow these steps:
+### Measures & KPIs
+- Revenue, COGS, Gross Margin, Operating Expenses, EBITDA
+- Gross Written Premium (GWP), Loss Ratio (LR)
+- Contracts, Conversion Rate, Retention Rate
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## 🔧 Setup Instructions
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js 18+ 
+- Supabase account
+- OpenAI API key
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Set up Supabase:
+   - Create new project at supabase.com
+   - Run database migrations (included in project)
+   - Configure RLS policies
+4. Add environment variables:
+   - `OPENAI_API_KEY`: Your OpenAI API key (via Supabase Edge Function secrets)
+5. Start development server: `npm run dev`
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+### Database Setup
+The application includes:
+- Complete schema migrations with RLS policies
+- Sample data for Italy, UK, and Spain operations
+- 12 months of ACTUAL and BUDGET data
+- Mixed favorable/unfavorable variances for testing
 
-**Edit a file directly in GitHub**
+## 🎯 Usage Examples
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Quick Start Workflow
+1. **View Dashboard**: See KPIs and trends on Overview page
+2. **Analyze Variances**: Compare actual vs budget performance
+3. **Ask Jude**: Natural language queries like "Show Italy revenue variance vs budget"
+4. **Upload Data**: Use Import wizard to upload CSV/Excel files (coming soon)
+5. **Generate Reports**: Create branded PowerPoint presentations (coming soon)
 
-**Use GitHub Codespaces**
+### Ask Jude Examples
+- "Show variance analysis for Italy vs budget"
+- "Generate Q2 revenue forecast"
+- "Compare conversion rates by channel"
+- "Build a scenario with 10% price increase"
+- "Create executive summary presentation"
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## 🔐 Security Features
 
-## What technologies are used for this project?
+- Row Level Security (RLS) for multi-tenant data isolation
+- Role-based access control (Admin/Analyst/Viewer)
+- Audit logging for all financial operations
+- Secure API key management via Supabase secrets
 
-This project is built with:
+## 🎨 Customization
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Theme Management
+- Custom color schemes for financial data
+- Chart color palettes optimized for variance analysis
+- Configurable slide masters for PowerPoint export
+- Support for brand color extraction from existing presentations
 
-## How can I deploy this project?
+### NetSuite Integration (Planned)
+- OAuth 2.0 and Token-based authentication stubs
+- Automated data synchronization for accounts, actuals, and budgets
+- RESTlet and SOAP API support
 
-Simply open [Lovable](https://lovable.dev/projects/e9a239da-e49e-4425-9dc3-af6552f6d9e8) and click on Share -> Publish.
+## 📈 Performance Optimization
 
-## Can I connect a custom domain to my Lovable project?
+- Server-side aggregations for large datasets
+- Efficient indexing on fact table dimensions
+- Pagination for large query results
+- Session-based caching for repeated operations
 
-Yes, you can!
+## 🧪 Testing Data
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Sample data includes:
+- 3 business units (Italy, UK, Spain)
+- 12 months of financial data
+- Multiple products and channels
+- Realistic variance patterns for testing
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## 📝 API Endpoints
+
+### Edge Functions
+- `/ask-jude`: AI-powered query processing
+- `/explain-variance`: Detailed variance analysis (coming soon)
+- `/generate-report`: PowerPoint generation (coming soon)
+- `/import-data`: File upload and processing (coming soon)
+
+## 🚀 Current Status
+
+### ✅ Completed
+- Complete database schema with seed data
+- Overview Dashboard with KPIs and trends
+- Variance Analysis with drill-through
+- Ask Jude AI assistant with natural language processing
+- Modern UI with finance-themed design system
+- Global filters for multi-dimensional analysis
+- Supabase integration with proper security
+
+### 🔄 In Progress
+- Sales Analysis dashboard
+- Forecasting tools with multiple methods
+- Scenario Simulator
+- Data import wizard
+- PowerPoint report generation
+
+## 🤝 Contributing
+
+This is a complete FP&A solution designed for:
+- Finance teams needing modern analytics tools
+- Companies seeking AI-powered financial insights
+- Organizations requiring flexible scenario planning
+- Enterprises needing branded reporting capabilities
+
+## 📄 License
+
+Enterprise-ready financial planning and analysis solution.
+
+---
+
+**Prima Finance Assistant** - Transforming Financial Planning & Analysis with AI-powered insights and modern web technology.
