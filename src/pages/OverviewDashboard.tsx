@@ -3,11 +3,14 @@ import { GlobalFilters } from '@/components/filters/GlobalFilters';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { SimpleChart } from '@/components/charts/SimpleChart';
 import { ReportGenerator } from '@/components/reports/ReportGenerator';
+import { FinancialRatiosDisplay } from '@/components/dashboard/FinancialRatiosDisplay';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, FactLedger, KPIData, ChartData } from '@/types';
 import { calculateKPIs, aggregateFactData } from '@/lib/finance-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Loader2, Calendar } from 'lucide-react';
 
 export default function OverviewDashboard() {
   const [filters, setFilters] = useState<FilterState>({
@@ -21,6 +24,8 @@ export default function OverviewDashboard() {
   const [kpis, setKPIs] = useState<KPIData[]>([]);
   const [chartData, setChartData] = useState<ChartData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPeriod, setSelectedPeriod] = useState('2024-12');
+  const [viewMode, setViewMode] = useState<'monthly' | 'quarterly'>('monthly');
 
   useEffect(() => {
     loadDashboardData();
@@ -110,6 +115,48 @@ export default function OverviewDashboard() {
             Key performance indicators and financial trends
           </p>
         </div>
+        
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="2024-01">Jan 2024</SelectItem>
+                <SelectItem value="2024-02">Feb 2024</SelectItem>
+                <SelectItem value="2024-03">Mar 2024</SelectItem>
+                <SelectItem value="2024-04">Apr 2024</SelectItem>
+                <SelectItem value="2024-05">May 2024</SelectItem>
+                <SelectItem value="2024-06">Jun 2024</SelectItem>
+                <SelectItem value="2024-07">Jul 2024</SelectItem>
+                <SelectItem value="2024-08">Aug 2024</SelectItem>
+                <SelectItem value="2024-09">Sep 2024</SelectItem>
+                <SelectItem value="2024-10">Oct 2024</SelectItem>
+                <SelectItem value="2024-11">Nov 2024</SelectItem>
+                <SelectItem value="2024-12">Dec 2024</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex gap-1">
+            <Button
+              variant={viewMode === 'monthly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('monthly')}
+            >
+              Monthly
+            </Button>
+            <Button
+              variant={viewMode === 'quarterly' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setViewMode('quarterly')}
+            >
+              Quarterly
+            </Button>
+          </div>
+        </div>
       </div>
 
       <GlobalFilters filters={filters} onFiltersChange={setFilters} />
@@ -158,6 +205,9 @@ export default function OverviewDashboard() {
           <ReportGenerator />
         </div>
       </div>
+
+      {/* Financial Ratios & KPIs Display */}
+      <FinancialRatiosDisplay selectedPeriod={selectedPeriod} viewMode={viewMode} />
 
       {/* Additional insights */}
       <div className="grid gap-6 md:grid-cols-3">

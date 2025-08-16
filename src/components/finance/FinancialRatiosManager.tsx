@@ -34,6 +34,7 @@ interface FinancialRatiosManagerProps {
 }
 
 const defaultRatios: FinancialRatio[] = [
+  // Core Profitability Ratios
   {
     id: '1',
     name: 'Combined Ratio',
@@ -72,7 +73,36 @@ const defaultRatios: FinancialRatio[] = [
   },
   {
     id: '5',
-    name: 'Growth Rate',
+    name: 'ROA',
+    formula: 'Net_Income / Total_Assets * 100',
+    description: 'Return on Assets measures how efficiently assets generate income',
+    category: 'profitability',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '6',
+    name: 'Underwriting Ratio',
+    formula: '(GWP - Claims - Expenses) / GWP * 100',
+    description: 'Underwriting profit as percentage of gross written premiums',
+    category: 'profitability',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '7',
+    name: 'Net Profit Margin',
+    formula: 'Net_Income / Total_Revenue * 100',
+    description: 'Net profit as percentage of total revenue',
+    category: 'profitability',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+
+  // Growth Ratios
+  {
+    id: '8',
+    name: 'Premium Growth Rate',
     formula: '(Current_GWP - Previous_GWP) / Previous_GWP * 100',
     description: 'YoY growth rate for gross written premiums',
     category: 'growth',
@@ -80,13 +110,210 @@ const defaultRatios: FinancialRatio[] = [
     isActive: true
   },
   {
-    id: '6',
+    id: '9',
+    name: 'Policy Count Growth',
+    formula: '(Current_Policies - Previous_Policies) / Previous_Policies * 100',
+    description: 'Year-over-year growth in number of policies',
+    category: 'growth',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '10',
+    name: 'Revenue Growth Rate',
+    formula: '(Current_Revenue - Previous_Revenue) / Previous_Revenue * 100',
+    description: 'Year-over-year total revenue growth',
+    category: 'growth',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+
+  // Efficiency & Operational Ratios
+  {
+    id: '11',
+    name: 'Claims Processing Efficiency',
+    formula: 'Claims_Processed / Claims_Staff',
+    description: 'Average number of claims processed per staff member',
+    category: 'efficiency',
+    displayFormat: 'number',
+    isActive: true
+  },
+  {
+    id: '12',
+    name: 'Average Premium per Policy',
+    formula: 'GWP / Total_Policies',
+    description: 'Average premium amount per policy',
+    category: 'efficiency',
+    displayFormat: 'currency',
+    isActive: true
+  },
+  {
+    id: '13',
+    name: 'Acquisition Cost Ratio',
+    formula: 'Acquisition_Costs / GWP * 100',
+    description: 'New business acquisition costs as percentage of GWP',
+    category: 'efficiency',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '14',
+    name: 'Administrative Expense Ratio',
+    formula: 'Administrative_Expenses / GWP * 100',
+    description: 'Administrative costs as percentage of gross written premiums',
+    category: 'efficiency',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+
+  // Leverage & Solvency Ratios
+  {
+    id: '15',
     name: 'Premium to Surplus',
     formula: 'GWP / Surplus',
     description: 'Leverage ratio showing premium volume relative to surplus',
     category: 'leverage',
     displayFormat: 'ratio',
-    isActive: false
+    isActive: true
+  },
+  {
+    id: '16',
+    name: 'Debt to Equity',
+    formula: 'Total_Debt / Total_Equity',
+    description: 'Financial leverage measuring debt relative to equity',
+    category: 'leverage',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+  {
+    id: '17',
+    name: 'Solvency Ratio',
+    formula: 'Available_Capital / Required_Capital',
+    description: 'Measure of financial strength and ability to meet obligations',
+    category: 'leverage',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+  {
+    id: '18',
+    name: 'Capital Adequacy Ratio',
+    formula: 'Eligible_Capital / Solvency_Capital_Requirement * 100',
+    description: 'Regulatory capital requirement coverage ratio',
+    category: 'leverage',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+
+  // Liquidity Ratios
+  {
+    id: '19',
+    name: 'Current Ratio',
+    formula: 'Current_Assets / Current_Liabilities',
+    description: 'Ability to pay short-term obligations',
+    category: 'liquidity',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+  {
+    id: '20',
+    name: 'Quick Ratio',
+    formula: '(Current_Assets - Inventory) / Current_Liabilities',
+    description: 'Liquidity measure excluding less liquid assets',
+    category: 'liquidity',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+  {
+    id: '21',
+    name: 'Cash Coverage Ratio',
+    formula: 'Cash_and_Investments / Current_Liabilities',
+    description: 'Ability to cover short-term liabilities with liquid assets',
+    category: 'liquidity',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+
+  // Specialized Insurance Ratios
+  {
+    id: '22',
+    name: 'Claim Frequency',
+    formula: 'Number_of_Claims / Number_of_Policies',
+    description: 'Average number of claims per policy',
+    category: 'efficiency',
+    displayFormat: 'ratio',
+    isActive: true
+  },
+  {
+    id: '23',
+    name: 'Average Claim Severity',
+    formula: 'Total_Claims / Number_of_Claims',
+    description: 'Average cost per claim',
+    category: 'efficiency',
+    displayFormat: 'currency',
+    isActive: true
+  },
+  {
+    id: '24',
+    name: 'Retention Ratio',
+    formula: 'Renewed_Policies / Expiring_Policies * 100',
+    description: 'Percentage of policies renewed at expiration',
+    category: 'efficiency',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '25',
+    name: 'Reserve Development Ratio',
+    formula: 'Reserve_Changes / Prior_Year_Reserves * 100',
+    description: 'Change in loss reserves as percentage of prior year reserves',
+    category: 'profitability',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '26',
+    name: 'Earned Premium Ratio',
+    formula: 'Earned_Premium / Written_Premium * 100',
+    description: 'Percentage of written premium that has been earned',
+    category: 'efficiency',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '27',
+    name: 'Reinsurance Ratio',
+    formula: 'Ceded_Premium / GWP * 100',
+    description: 'Percentage of gross premium ceded to reinsurers',
+    category: 'leverage',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '28',
+    name: 'Investment Yield',
+    formula: 'Investment_Income / Average_Investments * 100',
+    description: 'Annual return on investment portfolio',
+    category: 'profitability',
+    displayFormat: 'percentage',
+    isActive: true
+  },
+  {
+    id: '29',
+    name: 'Premium Per Employee',
+    formula: 'GWP / Total_Employees',
+    description: 'Premium productivity per employee',
+    category: 'efficiency',
+    displayFormat: 'currency',
+    isActive: true
+  },
+  {
+    id: '30',
+    name: 'Market Share',
+    formula: 'Company_GWP / Total_Market_GWP * 100',
+    description: 'Company market share in target markets',
+    category: 'growth',
+    displayFormat: 'percentage',
+    isActive: true
   }
 ];
 
