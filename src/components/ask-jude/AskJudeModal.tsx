@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
@@ -56,22 +57,16 @@ export function AskJudeModal({ open, onOpenChange }: AskJudeModalProps) {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/ask-jude', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke('ask-jude', {
+        body: {
           message: messageText,
           context: {
             currentPath: window.location.pathname,
           },
-        }),
+        },
       });
 
-      if (!response.ok) throw new Error('Failed to get response');
-
-      const data = await response.json();
+      if (error) throw error;
       
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
