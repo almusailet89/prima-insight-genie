@@ -14,7 +14,381 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          details_json: Json | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details_json?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details_json?: Json | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      business_units: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_units_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar: {
+        Row: {
+          created_at: string
+          id: string
+          month: number
+          period_key: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          month: number
+          period_key: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          month?: number
+          period_key?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      dim_accounts: {
+        Row: {
+          code: string
+          created_at: string
+          id: string
+          name: string
+          type: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          id?: string
+          name: string
+          type: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      dim_channels: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      dim_markets: {
+        Row: {
+          country: string
+          created_at: string
+          id: string
+        }
+        Insert: {
+          country: string
+          created_at?: string
+          id?: string
+        }
+        Update: {
+          country?: string
+          created_at?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      dim_products: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      fact_ledger: {
+        Row: {
+          account_id: string
+          business_unit_id: string
+          channel_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          market_id: string
+          measure: string
+          period_id: string
+          product_id: string | null
+          scenario: string
+          updated_at: string
+          value: number
+        }
+        Insert: {
+          account_id: string
+          business_unit_id: string
+          channel_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          market_id: string
+          measure: string
+          period_id: string
+          product_id?: string | null
+          scenario: string
+          updated_at?: string
+          value?: number
+        }
+        Update: {
+          account_id?: string
+          business_unit_id?: string
+          channel_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          market_id?: string
+          measure?: string
+          period_id?: string
+          product_id?: string | null
+          scenario?: string
+          updated_at?: string
+          value?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fact_ledger_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "dim_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_business_unit_id_fkey"
+            columns: ["business_unit_id"]
+            isOneToOne: false
+            referencedRelation: "business_units"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "dim_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_market_id_fkey"
+            columns: ["market_id"]
+            isOneToOne: false
+            referencedRelation: "dim_markets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_period_id_fkey"
+            columns: ["period_id"]
+            isOneToOne: false
+            referencedRelation: "calendar"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "dim_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          company_id: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          company_id?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          company_id?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      report_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          download_url: string | null
+          id: string
+          params_json: Json
+          status: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          download_url?: string | null
+          id?: string
+          params_json: Json
+          status: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          download_url?: string | null
+          id?: string
+          params_json?: Json
+          status?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      scenario_inputs: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          params_json: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          params_json: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          params_json?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
