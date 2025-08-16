@@ -9,8 +9,14 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+interface CommandAction {
+  type: 'navigate' | 'generate' | 'filter' | 'export';
+  label: string;
+  target?: string;
+  params?: any;
+}
+
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -21,18 +27,25 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { message } = await req.json();
+    const { message, context } = await req.json();
 
     if (!openAIApiKey) {
       throw new Error('OpenAI API key not configured');
     }
 
     console.log('Received message:', message);
+    console.log('Context:', context);
 
-    // Analyze the query to determine if we need to fetch specific data
-    const queryData = await analyzeAndFetchData(supabase, message);
+    // Analyze the query to determine intent and fetch relevant data
+    const { intent, queryData, actions } = await analyzeQueryAndFetchData(supabase, message, context);
     
-    const contextualInfo = queryData.length > 0 
+    // Build conversation history for context
+    const conversationHistory = context?.conversationHistory || [];
+    const conversationContext = conversationHistory.length > 0 
+      ? `\n\nConversation history:\n${conversationHistory.map((msg: any) => `${msg.type}: ${msg.content}`).join('\n')}`
+      : '';
+    
+    const dataContext = queryData.length > 0 
       ? `\n\nRelevant data context:\n${JSON.stringify(queryData, null, 2)}`
       : '';
 
@@ -43,33 +56,49 @@ serve(async (req) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-2025-08-07', // Using the latest GPT-5 model
         messages: [
           {
             role: 'system',
-            content: `You are Jude, Prima Finance's AI assistant specialized in financial analysis. You help analyze GWP forecasts, cost monitoring, variance analysis, and financial KPIs.
+            content: `You are Jude, Prima Finance's advanced AI assistant. You're conversational, helpful, and can perform actions within the Prima Finance application.
 
-Available data sources:
-- forecast_gwp: country-level GWP forecasts with growth rates
-- cost_monitoring: departmental costs with budget vs actuals
-- fact_ledger: comprehensive financial transactions
-- Business units: Italy, UK, Spain operations
+CORE CAPABILITIES:
+- Financial data analysis and insights
+- Report generation and PowerPoint creation  
+- App navigation and feature control
+- Scenario modeling and forecasting
+- Variance analysis and KPI monitoring
 
-When users ask about:
-- "GWP" or "premiums" → Query forecast_gwp table
-- "costs", "departments", "variance" → Query cost_monitoring table  
-- "Italy", "UK", "Spain" → Filter by country
-- "budget vs actual" → Focus on variance analysis
+AVAILABLE DATA SOURCES:
+- forecast_gwp: Country-level GWP forecasts with growth rates (Italy, UK, Spain)
+- cost_monitoring: Departmental costs with budget vs actuals
+- fact_ledger: Comprehensive financial transactions
+- Business units across Italy, UK, Spain operations
 
-Provide specific insights with numbers when data is available. Format currency in EUR (€) and percentages appropriately.${contextualInfo}`
+COMMUNICATION STYLE:
+- Be conversational and natural like ChatGPT
+- Provide specific insights with actual numbers when data is available
+- Use clear formatting with bullet points, tables when helpful
+- Be proactive in suggesting actions the user can take
+- Format currency in EUR (€) and percentages appropriately
+
+COMMAND RECOGNITION:
+When users ask to:
+- "Navigate to [page]" or "Show me [page]" → Suggest navigation actions
+- "Generate report" or "Create PowerPoint" → Offer report generation
+- "Analyze [data]" or "Show variance" → Provide analysis with action buttons
+- "Filter by [criteria]" → Suggest filtering actions
+- "Export data" → Offer export options
+
+Always be helpful and suggest next steps the user might want to take.${conversationContext}${dataContext}`
           },
           {
             role: 'user',
             content: message
           }
         ],
-        max_tokens: 800,
-        temperature: 0.3,
+        max_completion_tokens: 1200,
+        // Note: temperature not supported in GPT-5
       }),
     });
 
@@ -83,9 +112,13 @@ Provide specific insights with numbers when data is available. Format currency i
     const reply = data.choices[0]?.message?.content || 'I apologize, but I could not generate a response.';
 
     console.log('Generated response:', reply);
+    console.log('Intent:', intent);
+    console.log('Actions:', actions);
 
     return new Response(JSON.stringify({ 
       response: reply,
+      intent: intent,
+      actions: actions,
       timestamp: new Date().toISOString(),
       dataUsed: queryData.length > 0
     }), {
@@ -95,6 +128,7 @@ Provide specific insights with numbers when data is available. Format currency i
   } catch (error) {
     console.error('Error in ask-jude function:', error);
     return new Response(JSON.stringify({ 
+      response: 'I apologize, but I encountered an error processing your request. Please try again.',
       error: 'Failed to process your request. Please try again.',
       details: error.message
     }), {
@@ -104,13 +138,52 @@ Provide specific insights with numbers when data is available. Format currency i
   }
 });
 
-async function analyzeAndFetchData(supabase: any, query: string): Promise<any[]> {
+async function analyzeQueryAndFetchData(supabase: any, query: string, context: any): Promise<{ intent: string, queryData: any[], actions: CommandAction[] }> {
   const queryLower = query.toLowerCase();
   let relevantData: any[] = [];
+  let intent = 'general_inquiry';
+  let actions: CommandAction[] = [];
 
   try {
+    // Detect navigation intents
+    if (queryLower.includes('navigate') || queryLower.includes('go to') || queryLower.includes('show me') && (
+      queryLower.includes('dashboard') || queryLower.includes('variance') || queryLower.includes('forecast') || 
+      queryLower.includes('scenario') || queryLower.includes('import') || queryLower.includes('report')
+    )) {
+      intent = 'navigation';
+      if (queryLower.includes('variance')) {
+        actions.push({ type: 'navigate', label: 'Go to Variance Analysis', target: '/variance' });
+      } else if (queryLower.includes('forecast')) {
+        actions.push({ type: 'navigate', label: 'Go to Forecasting', target: '/forecasting' });
+      } else if (queryLower.includes('scenario')) {
+        actions.push({ type: 'navigate', label: 'Go to Scenario Simulator', target: '/scenario' });
+      } else if (queryLower.includes('report')) {
+        actions.push({ type: 'navigate', label: 'Go to Reports', target: '/reports' });
+      } else if (queryLower.includes('import')) {
+        actions.push({ type: 'navigate', label: 'Go to Import Data', target: '/import' });
+      } else {
+        actions.push({ type: 'navigate', label: 'Go to Dashboard', target: '/' });
+      }
+    }
+
+    // Detect report generation intents
+    if (queryLower.includes('generate') || queryLower.includes('create') || queryLower.includes('build')) {
+      if (queryLower.includes('report') || queryLower.includes('powerpoint') || queryLower.includes('presentation') || queryLower.includes('ppt')) {
+        intent = 'report_generation';
+        actions.push({ type: 'generate', label: 'Generate PowerPoint Report', target: 'report' });
+      } else if (queryLower.includes('scenario')) {
+        intent = 'scenario_modeling';
+        actions.push({ type: 'navigate', label: 'Create Scenario Analysis', target: '/scenario' });
+      }
+    }
+
+    // Detect data analysis intents
+    if (queryLower.includes('analyze') || queryLower.includes('analysis') || queryLower.includes('show') || queryLower.includes('variance')) {
+      intent = 'data_analysis';
+    }
+
     // Check if query is about GWP/forecasts
-    if (queryLower.includes('gwp') || queryLower.includes('premium') || queryLower.includes('forecast')) {
+    if (queryLower.includes('gwp') || queryLower.includes('premium') || queryLower.includes('forecast') || queryLower.includes('revenue')) {
       const { data: gwpData } = await supabase
         .from('forecast_gwp')
         .select('*')
@@ -120,10 +193,14 @@ async function analyzeAndFetchData(supabase: any, query: string): Promise<any[]>
       if (gwpData && gwpData.length > 0) {
         relevantData.push({ table: 'forecast_gwp', data: gwpData });
       }
+      
+      if (intent === 'general_inquiry') intent = 'gwp_analysis';
+      actions.push({ type: 'export', label: 'Export GWP Data', params: { type: 'gwp' } });
     }
 
     // Check if query is about costs/departments/variance
-    if (queryLower.includes('cost') || queryLower.includes('department') || queryLower.includes('variance') || queryLower.includes('budget')) {
+    if (queryLower.includes('cost') || queryLower.includes('department') || queryLower.includes('variance') || 
+        queryLower.includes('budget') || queryLower.includes('actual')) {
       const { data: costData } = await supabase
         .from('cost_monitoring')
         .select('*')
@@ -133,6 +210,10 @@ async function analyzeAndFetchData(supabase: any, query: string): Promise<any[]>
       if (costData && costData.length > 0) {
         relevantData.push({ table: 'cost_monitoring', data: costData });
       }
+      
+      if (intent === 'general_inquiry') intent = 'cost_analysis';
+      actions.push({ type: 'navigate', label: 'View Variance Analysis', target: '/variance' });
+      actions.push({ type: 'export', label: 'Export Cost Data', params: { type: 'costs' } });
     }
 
     // Check if query mentions specific countries
@@ -151,24 +232,42 @@ async function analyzeAndFetchData(supabase: any, query: string): Promise<any[]>
       if (countryGwp && countryGwp.length > 0) {
         relevantData.push({ table: 'country_gwp', data: countryGwp });
       }
+      
+      // Add country-specific filtering action
+      actions.push({ 
+        type: 'filter', 
+        label: `Filter by ${mentionedCountries.join(', ').toUpperCase()}`, 
+        params: { countries: mentionedCountries } 
+      });
     }
 
     // If it's a general query, get recent summary data
-    if (relevantData.length === 0 && (queryLower.includes('overview') || queryLower.includes('summary') || queryLower.includes('kpi'))) {
-      const { data: recentFacts } = await supabase
-        .from('fact_ledger')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10);
+    if (relevantData.length === 0 && (queryLower.includes('overview') || queryLower.includes('summary') || 
+        queryLower.includes('kpi') || queryLower.includes('performance') || queryLower.includes('trend'))) {
+      const [{ data: recentGwp }, { data: recentCosts }] = await Promise.all([
+        supabase.from('forecast_gwp').select('*').order('month', { ascending: false }).limit(5),
+        supabase.from('cost_monitoring').select('*').order('month', { ascending: false }).limit(5)
+      ]);
       
-      if (recentFacts && recentFacts.length > 0) {
-        relevantData.push({ table: 'recent_facts', data: recentFacts });
+      if (recentGwp && recentGwp.length > 0) {
+        relevantData.push({ table: 'recent_gwp', data: recentGwp });
       }
+      if (recentCosts && recentCosts.length > 0) {
+        relevantData.push({ table: 'recent_costs', data: recentCosts });
+      }
+      
+      if (intent === 'general_inquiry') intent = 'performance_overview';
+      actions.push({ type: 'navigate', label: 'View Full Dashboard', target: '/' });
+    }
+
+    // Export actions for data queries
+    if (relevantData.length > 0 && !actions.some(a => a.type === 'export')) {
+      actions.push({ type: 'export', label: 'Export Analysis', params: { type: 'analysis' } });
     }
 
   } catch (error) {
-    console.error('Error fetching contextual data:', error);
+    console.error('Error analyzing query and fetching data:', error);
   }
 
-  return relevantData;
+  return { intent, queryData: relevantData, actions };
 }
