@@ -111,6 +111,8 @@ export type Database = {
           id: string
           month: number
           period_key: string
+          quarter: string | null
+          week_number: number | null
           year: number
         }
         Insert: {
@@ -118,6 +120,8 @@ export type Database = {
           id?: string
           month: number
           period_key: string
+          quarter?: string | null
+          week_number?: number | null
           year: number
         }
         Update: {
@@ -125,6 +129,8 @@ export type Database = {
           id?: string
           month?: number
           period_key?: string
+          quarter?: string | null
+          week_number?: number | null
           year?: number
         }
         Relationships: []
@@ -231,6 +237,30 @@ export type Database = {
         }
         Relationships: []
       }
+      dim_cost_centers: {
+        Row: {
+          code: string
+          created_at: string
+          department: string
+          id: string
+          name: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          department: string
+          id?: string
+          name: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          department?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
       dim_markets: {
         Row: {
           country: string
@@ -273,6 +303,7 @@ export type Database = {
           business_unit_id: string
           channel_id: string | null
           company_id: string
+          cost_center_id: string | null
           created_at: string
           id: string
           market_id: string
@@ -288,6 +319,7 @@ export type Database = {
           business_unit_id: string
           channel_id?: string | null
           company_id: string
+          cost_center_id?: string | null
           created_at?: string
           id?: string
           market_id: string
@@ -303,6 +335,7 @@ export type Database = {
           business_unit_id?: string
           channel_id?: string | null
           company_id?: string
+          cost_center_id?: string | null
           created_at?: string
           id?: string
           market_id?: string
@@ -340,6 +373,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fact_ledger_cost_center_id_fkey"
+            columns: ["cost_center_id"]
+            isOneToOne: false
+            referencedRelation: "dim_cost_centers"
             referencedColumns: ["id"]
           },
           {
