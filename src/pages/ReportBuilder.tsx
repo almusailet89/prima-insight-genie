@@ -65,20 +65,14 @@ export default function ReportBuilder() {
 
   const fetchActiveTemplate = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: settings } = await supabase
-        .from('app_settings')
-        .select('active_template_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (settings?.active_template_id) {
+      // Get active template from localStorage
+      const activeTemplateId = localStorage.getItem('active_template_id');
+      
+      if (activeTemplateId) {
         const { data: templateData } = await supabase
           .from('report_templates')
           .select('*')
-          .eq('id', settings.active_template_id)
+          .eq('id', activeTemplateId)
           .single();
 
         if (templateData) {
@@ -274,18 +268,23 @@ export default function ReportBuilder() {
 
       if (response.error) throw response.error;
 
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase
-          .from('report_instances')
-          .insert({
-            template_id: template.id,
-            title: reportConfig.title,
-            generated_by: user.id,
-            configuration: reportConfig as any,
-            status: 'completed',
-            download_url: response.data?.downloadUrl
-          });
+      // Try to save report instance if possible, but don't block generation
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          await supabase
+            .from('report_instances')
+            .insert({
+              template_id: template.id,
+              title: reportConfig.title,
+              generated_by: user.id,
+              configuration: reportConfig as any,
+              status: 'completed',
+              download_url: response.data?.downloadUrl
+            });
+        }
+      } catch (dbError) {
+        console.log('Could not save to database, but report generated successfully');
       }
 
       toast({
