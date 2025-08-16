@@ -11,6 +11,7 @@ import { Upload, Download, Eye, Edit, Trash2, Palette, FileImage } from 'lucide-
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useDropzone } from 'react-dropzone';
+import { TemplatePreview } from './TemplatePreview';
 
 interface Template {
   id: string;
@@ -31,6 +32,7 @@ export function TemplateManager() {
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadForm, setShowUploadForm] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
   const { toast } = useToast();
 
   // Form state for new template
@@ -473,7 +475,10 @@ export function TemplateManager() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setSelectedTemplate(template)}
+                  onClick={() => {
+                    setSelectedTemplate(template);
+                    setShowPreview(true);
+                  }}
                 >
                   <Eye className="h-3 w-3 mr-1" />
                   Preview
@@ -506,6 +511,22 @@ export function TemplateManager() {
           </CardContent>
         </Card>
       )}
+
+      <TemplatePreview
+        template={selectedTemplate}
+        isOpen={showPreview}
+        onClose={() => {
+          setShowPreview(false);
+          setSelectedTemplate(null);
+        }}
+        onUse={(template) => {
+          setShowPreview(false);
+          toast({
+            title: "Template Selected",
+            description: `Using ${template.name} for report generation`,
+          });
+        }}
+      />
     </div>
   );
 }
