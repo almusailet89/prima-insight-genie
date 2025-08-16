@@ -10,25 +10,65 @@ export default function ImportData() {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  const handleFileUpload = (file: File) => {
+  const handleFileUpload = async (file: File) => {
+    if (!file) return;
+    
     setIsUploading(true);
     setUploadProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setIsUploading(false);
-          toast({
-            title: "Upload Complete",
-            description: `Successfully imported ${file.name}`,
-          });
-          return 100;
-        }
-        return prev + 10;
+    try {
+      // Convert file to base64
+      const base64Content = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const result = reader.result as string;
+          resolve(result.split(',')[1]); // Remove data:mime;base64, prefix
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
       });
-    }, 200);
+
+      setUploadProgress(30);
+
+      const response = await fetch('https://cgvdtcmchxkbnsdgbcvz.functions.supabase.co/process-file-upload', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileContent: base64Content,
+          fileType: file.type,
+        }),
+      });
+
+      setUploadProgress(80);
+
+      const result = await response.json();
+      
+      if (result.success) {
+        setUploadProgress(100);
+        toast({
+          title: "Upload Complete",
+          description: result.message,
+        });
+      } else {
+        throw new Error(result.error || 'Upload failed');
+      }
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload Failed",
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    } finally {
+      setTimeout(() => {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }, 1000);
+    }
   };
 
   return (
@@ -96,22 +136,29 @@ export default function ImportData() {
 
             <div className="space-y-3">
               <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                <span className="font-medium">Revenue Column</span>
-                <span className="text-sm text-muted-foreground">Auto-detect</span>
+                <span className="font-medium">GWP/Revenue</span>
+                <span className="text-sm text-muted-foreground">gwp, premium, revenue</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                <span className="font-medium">Date Column</span>
-                <span className="text-sm text-muted-foreground">Auto-detect</span>
+                <span className="font-medium">Country/Region</span>
+                <span className="text-sm text-muted-foreground">country, nation, region</span>
               </div>
               <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                <span className="font-medium">Business Unit</span>
-                <span className="text-sm text-muted-foreground">Auto-detect</span>
+                <span className="font-medium">Department</span>
+                <span className="text-sm text-muted-foreground">department, dept, division</span>
+              </div>
+              <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                <span className="font-medium">Budget/Actuals</span>
+                <span className="text-sm text-muted-foreground">budget, actual, spent</span>
               </div>
             </div>
 
-            <Button className="w-full" disabled>
-              Configure Mapping
-            </Button>
+            <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+              <p className="text-sm text-blue-800">
+                <strong>Supported formats:</strong> CSV files with headers for GWP forecasts or cost monitoring data.
+                The system auto-detects table type based on column headers.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

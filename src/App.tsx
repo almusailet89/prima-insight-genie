@@ -10,6 +10,7 @@ import ScenarioSimulator from "./pages/ScenarioSimulator";
 import SalesAnalysis from "./pages/SalesAnalysis";
 import Forecasting from "./pages/Forecasting";
 import ImportData from "./pages/ImportData";
+import Reports from "./pages/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -50,6 +51,11 @@ export default function App() {
             <Route path="/import" element={
               <AppLayout>
                 <ImportData />
+              </AppLayout>
+            } />
+            <Route path="/reports" element={
+              <AppLayout>
+                <Reports />
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />

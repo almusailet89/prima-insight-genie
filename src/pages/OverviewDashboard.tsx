@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { GlobalFilters } from '@/components/filters/GlobalFilters';
 import { KPICard } from '@/components/dashboard/KPICard';
 import { SimpleChart } from '@/components/charts/SimpleChart';
+import { ReportGenerator } from '@/components/reports/ReportGenerator';
 import { supabase } from '@/integrations/supabase/client';
 import { FilterState, FactLedger, KPIData, ChartData } from '@/types';
 import { calculateKPIs, aggregateFactData } from '@/lib/finance-utils';
@@ -120,36 +121,42 @@ export default function OverviewDashboard() {
         ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <SimpleChart
-          title="Revenue Trends"
-          data={chartData}
-          showForecast={true}
-        />
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Variance Summary</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {kpis.slice(0, 5).map((kpi) => (
-                <div key={kpi.name} className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{kpi.name}</span>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold">
-                      {(kpi.percentVariance * 100).toFixed(1)}%
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {kpi.variance > 0 ? 'Favorable' : 'Unfavorable'}
+      {/* Charts and Report Generator */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-6">
+          <SimpleChart
+            title="Revenue Trends"
+            data={chartData}
+            showForecast={true}
+          />
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>Variance Summary</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {kpis.slice(0, 5).map((kpi) => (
+                  <div key={kpi.name} className="flex items-center justify-between">
+                    <span className="text-sm font-medium">{kpi.name}</span>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold">
+                        {(kpi.percentVariance * 100).toFixed(1)}%
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {kpi.variance > 0 ? 'Favorable' : 'Unfavorable'}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <ReportGenerator />
+        </div>
       </div>
 
       {/* Additional insights */}
