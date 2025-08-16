@@ -149,7 +149,10 @@ export function TemplateManager() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        throw new Error(error.message || 'Database error occurred');
+      }
 
       toast({
         title: "Template Uploaded",
@@ -158,7 +161,9 @@ export function TemplateManager() {
 
       await fetchTemplates();
     } catch (error) {
-      throw new Error(`Failed to import PowerPoint template: ${error}`);
+      console.error('Template import error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      throw new Error(`Failed to import PowerPoint template: ${errorMessage}`);
     }
   };
 
@@ -211,7 +216,15 @@ export function TemplateManager() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error:', error);
+        toast({
+          title: "Error",
+          description: error.message || "Failed to create template",
+          variant: "destructive",
+        });
+        return;
+      }
 
       toast({
         title: "Template Created",
@@ -239,9 +252,10 @@ export function TemplateManager() {
       await fetchTemplates();
     } catch (error) {
       console.error('Error creating template:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       toast({
         title: "Error",
-        description: "Failed to create template",
+        description: errorMessage,
         variant: "destructive",
       });
     }

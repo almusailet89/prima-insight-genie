@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { ReportPreview } from './ReportPreview';
 
 interface Template {
   id: string;
@@ -204,12 +205,17 @@ export function ReportBuilder() {
       if (response.error) throw response.error;
 
       // Create report instance record
+      const user = await supabase.auth.getUser();
+      if (!user.data.user) {
+        throw new Error('User must be authenticated to generate reports');
+      }
+
       const { data: reportInstance, error: instanceError } = await supabase
         .from('report_instances')
         .insert({
           template_id: selectedTemplate,
           title: reportTitle,
-          generated_by: (await supabase.auth.getUser()).data.user?.id,
+          generated_by: user.data.user.id,
           configuration: reportConfig as any,
           status: 'completed',
           download_url: response.data?.downloadUrl
@@ -217,7 +223,10 @@ export function ReportBuilder() {
         .select()
         .single();
 
-      if (instanceError) throw instanceError;
+      if (instanceError) {
+        console.error('Database error:', instanceError);
+        throw new Error(instanceError.message || 'Failed to save report instance');
+      }
 
       toast({
         title: "Report Generated",
@@ -430,43 +439,16 @@ export function ReportBuilder() {
             </TabsContent>
             
             <TabsContent value="preview" className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Report Preview</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Title:</span>
-                      <span>{reportTitle}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Period:</span>
-                      <span>{selectedPeriod === 'all' ? 'All periods' : selectedPeriod}</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">Countries:</span>
-                      <div className="flex gap-1">
-                        {selectedCountries.map(country => (
-                          <Badge key={country} variant="secondary">{country}</Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <div>
-                      <span className="font-medium">Sections ({reportSections.filter(s => s.enabled).length}):</span>
-                      <div className="mt-2 space-y-1">
-                        {reportSections.filter(s => s.enabled).map((section, index) => (
-                          <div key={section.id} className="flex items-center gap-2 text-sm">
-                            <span className="text-muted-foreground">{index + 1}.</span>
-                            {getSectionIcon(section.type)}
-                            <span>{section.title}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              <ReportPreview 
+                reportConfig={{
+                  title: reportTitle,
+                  template_id: selectedTemplate,
+                  period: selectedPeriod === 'all' ? '' : selectedPeriod,
+                  countries: selectedCountries,
+                  sections: reportSections.filter(s => s.enabled)
+                }}
+                template={templates.find(t => t.id === selectedTemplate)}
+              />
             </TabsContent>
           </Tabs>
 
