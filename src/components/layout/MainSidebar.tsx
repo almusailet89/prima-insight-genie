@@ -36,6 +36,8 @@ const navigationItems = [
     title: 'Tools',
     items: [
       { title: 'Import Data', url: '/import', icon: Upload },
+      { title: 'Financial Ratios', url: '/ratios', icon: Calculator },
+      { title: 'NetSuite Integration', url: '/netsuite', icon: Settings },
       { title: 'Scenario Simulator', url: '/scenarios', icon: Users },
       { title: 'Reports & Narratives', url: '/reports', icon: FileText },
     ],

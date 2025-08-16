@@ -13,6 +13,8 @@ import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
 import Templates from "./pages/Templates";
 import ReportBuilder from "./pages/ReportBuilder";
+import FinancialRatios from "./pages/FinancialRatios";
+import NetSuiteIntegration from "./pages/NetSuiteIntegration";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -68,6 +70,16 @@ export default function App() {
             <Route path="/report-builder" element={
               <AppLayout>
                 <ReportBuilder />
+              </AppLayout>
+            } />
+            <Route path="/ratios" element={
+              <AppLayout>
+                <FinancialRatios />
+              </AppLayout>
+            } />
+            <Route path="/netsuite" element={
+              <AppLayout>
+                <NetSuiteIntegration />
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />

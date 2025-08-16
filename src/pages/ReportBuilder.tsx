@@ -12,7 +12,7 @@ import { SlidesPanel } from '@/components/reports/SlidesPanel';
 import { SlidePreview } from '@/components/reports/SlidePreview';
 import { AskJudeChat } from '@/components/reports/AskJudeChat';
 import { DataVisualizationChat } from '@/components/reports/DataVisualizationChat';
-import { FinancialRatiosManager } from '@/components/finance/FinancialRatiosManager';
+
 
 interface Template {
   id: string;
@@ -55,7 +55,7 @@ export default function ReportBuilder() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [history, setHistory] = useState<Slide[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  const [showRatiosManager, setShowRatiosManager] = useState(false);
+  
   const [activePanel, setActivePanel] = useState<'jude' | 'visualization'>('visualization');
   const { toast } = useToast();
 
@@ -385,7 +385,7 @@ export default function ReportBuilder() {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowRatiosManager(true)}>
+            <Button variant="outline" size="sm" onClick={() => window.location.href = '/ratios'}>
               <Settings className="h-4 w-4 mr-1" />
               Ratios
             </Button>
@@ -485,20 +485,6 @@ export default function ReportBuilder() {
         </div>
       </div>
 
-      {/* Financial Ratios Manager Modal */}
-      {showRatiosManager && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-          <div className="fixed left-[50%] top-[50%] z-50 w-[90vw] max-w-4xl translate-x-[-50%] translate-y-[-50%] bg-background p-6 shadow-lg rounded-lg border max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Financial Ratios Manager</h2>
-              <Button variant="outline" onClick={() => setShowRatiosManager(false)}>
-                Close
-              </Button>
-            </div>
-            <FinancialRatiosManager />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
