@@ -404,6 +404,50 @@ export type Database = {
           },
         ]
       }
+      report_instances: {
+        Row: {
+          completed_at: string | null
+          configuration: Json
+          created_at: string
+          download_url: string | null
+          generated_by: string | null
+          id: string
+          status: string
+          template_id: string
+          title: string
+        }
+        Insert: {
+          completed_at?: string | null
+          configuration?: Json
+          created_at?: string
+          download_url?: string | null
+          generated_by?: string | null
+          id?: string
+          status?: string
+          template_id: string
+          title: string
+        }
+        Update: {
+          completed_at?: string | null
+          configuration?: Json
+          created_at?: string
+          download_url?: string | null
+          generated_by?: string | null
+          id?: string
+          status?: string
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_instances_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_jobs: {
         Row: {
           completed_at: string | null
@@ -437,6 +481,54 @@ export type Database = {
         }
         Relationships: []
       }
+      report_templates: {
+        Row: {
+          branding_config: Json
+          chart_styles: Json
+          company_name: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_default: boolean
+          name: string
+          slide_layouts: Json
+          table_styles: Json
+          template_type: string
+          updated_at: string
+        }
+        Insert: {
+          branding_config?: Json
+          chart_styles?: Json
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name: string
+          slide_layouts?: Json
+          table_styles?: Json
+          template_type?: string
+          updated_at?: string
+        }
+        Update: {
+          branding_config?: Json
+          chart_styles?: Json
+          company_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          name?: string
+          slide_layouts?: Json
+          table_styles?: Json
+          template_type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scenario_inputs: {
         Row: {
           created_at: string
@@ -460,6 +552,41 @@ export type Database = {
           params_json?: Json
         }
         Relationships: []
+      }
+      template_assets: {
+        Row: {
+          asset_name: string
+          asset_type: string
+          asset_url: string
+          created_at: string
+          id: string
+          template_id: string
+        }
+        Insert: {
+          asset_name: string
+          asset_type: string
+          asset_url: string
+          created_at?: string
+          id?: string
+          template_id: string
+        }
+        Update: {
+          asset_name?: string
+          asset_type?: string
+          asset_url?: string
+          created_at?: string
+          id?: string
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_assets_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
