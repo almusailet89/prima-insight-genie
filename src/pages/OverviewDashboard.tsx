@@ -10,7 +10,9 @@ import { calculateKPIs, aggregateFactData } from '@/lib/finance-utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Calendar } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Calendar, BarChart3, TrendingUp } from 'lucide-react';
 
 export default function OverviewDashboard() {
   const [filters, setFilters] = useState<FilterState>({
@@ -26,22 +28,31 @@ export default function OverviewDashboard() {
   const [loading, setLoading] = useState(true);
   const [selectedPeriod, setSelectedPeriod] = useState('2024-12');
   const [viewMode, setViewMode] = useState<'monthly' | 'quarterly'>('monthly');
+  const [activeScenario, setActiveScenario] = useState<'ACTUAL' | 'BUDGET' | 'FORECAST'>('ACTUAL');
+  const [chartDataByScenario, setChartDataByScenario] = useState<Record<string, ChartData[]>>({});
 
   useEffect(() => {
     loadDashboardData();
-  }, [filters]);
+  }, [filters, activeScenario]);
+
+  useEffect(() => {
+    if (chartDataByScenario[activeScenario]) {
+      setChartData(chartDataByScenario[activeScenario]);
+    }
+  }, [activeScenario, chartDataByScenario]);
 
   const loadDashboardData = async () => {
     setLoading(true);
     try {
-      // Build query with filters
+      // Build query with filters for all scenarios
       let query = supabase
         .from('fact_ledger')
         .select(`
           *,
           calendar:period_id(period_key),
           business_units:business_unit_id(name),
-          dim_markets:market_id(country)
+          dim_markets:market_id(country),
+          dim_cost_centers:cost_center_id(code, name, department)
         `);
 
       // Apply filters
@@ -62,11 +73,14 @@ export default function OverviewDashboard() {
 
       if (error) throw error;
 
-      // Calculate KPIs
-      const kpiData = calculateKPIs(factData as any || []);
+      const allData = factData as any || [];
+      
+      // Calculate KPIs for current scenario
+      const scenarioData = allData.filter((f: any) => f.scenario === activeScenario);
+      const kpiData = calculateKPIs(scenarioData);
       setKPIs(kpiData);
 
-      // Prepare chart data - monthly trends
+      // Prepare chart data by scenario
       const periodsQuery = await supabase
         .from('calendar')
         .select('id, period_key')
@@ -74,23 +88,32 @@ export default function OverviewDashboard() {
 
       const periods = periodsQuery.data || [];
       
-      const monthlyData: ChartData[] = periods.map(period => {
-        const periodFacts = (factData as any || []).filter((f: any) => f.period_id === period.id);
-        const revenue = periodFacts.filter((f: any) => f.measure === 'Revenue');
-        
-        const actual = revenue.filter((f: any) => f.scenario === 'ACTUAL').reduce((sum: number, f: any) => sum + f.value, 0);
-        const budget = revenue.filter((f: any) => f.scenario === 'BUDGET').reduce((sum: number, f: any) => sum + f.value, 0);
-        const forecast = revenue.filter((f: any) => f.scenario === 'FORECAST').reduce((sum: number, f: any) => sum + f.value, 0);
+      const chartsByScenario: Record<string, ChartData[]> = {};
+      
+      ['ACTUAL', 'BUDGET', 'FORECAST'].forEach(scenario => {
+        const monthlyData: ChartData[] = periods.map(period => {
+          const periodFacts = allData.filter((f: any) => 
+            f.period_id === period.id && f.scenario === scenario
+          );
+          
+          const revenue = periodFacts
+            .filter((f: any) => f.measure === 'Revenue' || f.measure === 'GWP')
+            .reduce((sum: number, f: any) => sum + (f.value || 0), 0);
 
-        return {
-          period: period.period_key,
-          actual,
-          budget,
-          forecast: forecast > 0 ? forecast : undefined,
-        };
+          return {
+            period: period.period_key,
+            actual: scenario === 'ACTUAL' ? revenue : undefined,
+            budget: scenario === 'BUDGET' ? revenue : undefined,
+            forecast: scenario === 'FORECAST' ? revenue : undefined,
+          };
+        });
+        
+        chartsByScenario[scenario] = monthlyData;
       });
 
-      setChartData(monthlyData);
+      setChartDataByScenario(chartsByScenario);
+      setChartData(chartsByScenario[activeScenario] || []);
+      
     } catch (error) {
       console.error('Error loading dashboard data:', error);
     } finally {
@@ -161,50 +184,82 @@ export default function OverviewDashboard() {
 
       <GlobalFilters filters={filters} onFiltersChange={setFilters} />
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {kpis.slice(0, 8).map((kpi) => (
-          <KPICard key={kpi.name} data={kpi} />
-        ))}
-      </div>
+      {/* Scenario Tabs */}
+      <Tabs value={activeScenario} onValueChange={(value) => setActiveScenario(value as any)} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="ACTUAL" className="flex items-center gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Actuals
+            <Badge variant="secondary" className="text-xs">
+              Until Aug
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="BUDGET" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Budget
+            <Badge variant="secondary" className="text-xs">
+              Full Year
+            </Badge>
+          </TabsTrigger>
+          <TabsTrigger value="FORECAST" className="flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Forecast
+            <Badge variant="secondary" className="text-xs">
+              Sep-Dec
+            </Badge>
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Charts and Report Generator */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-6">
-          <SimpleChart
-            title="Revenue Trends"
-            data={chartData}
-            showForecast={true}
-          />
-          
-          <Card>
-            <CardHeader>
-              <CardTitle>Variance Summary</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {kpis.slice(0, 5).map((kpi) => (
-                  <div key={kpi.name} className="flex items-center justify-between">
-                    <span className="text-sm font-medium">{kpi.name}</span>
-                    <div className="text-right">
-                      <div className="text-sm font-semibold">
-                        {(kpi.percentVariance * 100).toFixed(1)}%
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {kpi.variance > 0 ? 'Favorable' : 'Unfavorable'}
-                      </div>
+        {/* Content for each scenario */}
+        {['ACTUAL', 'BUDGET', 'FORECAST'].map((scenario) => (
+          <TabsContent key={scenario} value={scenario} className="space-y-6">
+            {/* KPI Cards */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+              {kpis.slice(0, 8).map((kpi) => (
+                <KPICard key={kpi.name} data={kpi} />
+              ))}
+            </div>
+
+            {/* Charts and Report Generator */}
+            <div className="grid gap-6 lg:grid-cols-3">
+              <div className="lg:col-span-2 space-y-6">
+                <SimpleChart
+                  title={`${scenario} - Revenue Trends`}
+                  data={chartData}
+                  showForecast={scenario === 'FORECAST'}
+                />
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Variance Summary - {scenario}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {kpis.slice(0, 5).map((kpi) => (
+                        <div key={kpi.name} className="flex items-center justify-between">
+                          <span className="text-sm font-medium">{kpi.name}</span>
+                          <div className="text-right">
+                            <div className="text-sm font-semibold">
+                              {(kpi.percentVariance * 100).toFixed(1)}%
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {kpi.variance > 0 ? 'Favorable' : 'Unfavorable'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                ))}
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
-        </div>
 
-        <div>
-          <ReportGenerator />
-        </div>
-      </div>
+              <div>
+                <ReportGenerator />
+              </div>
+            </div>
+          </TabsContent>
+        ))}
+      </Tabs>
 
       {/* Financial Ratios & KPIs Display */}
       <FinancialRatiosDisplay selectedPeriod={selectedPeriod} viewMode={viewMode} />

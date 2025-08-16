@@ -8,7 +8,7 @@ import OverviewDashboard from "./pages/OverviewDashboard";
 import VarianceAnalysis from "./pages/VarianceAnalysis";
 import ScenarioSimulator from "./pages/ScenarioSimulator";
 import SalesAnalysis from "./pages/SalesAnalysis";
-import Forecasting from "./pages/Forecasting";
+import EnhancedForecasting from "./pages/EnhancedForecasting";
 import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
 import Templates from "./pages/Templates";
@@ -44,7 +44,7 @@ export default function App() {
             } />
             <Route path="/forecasting" element={
               <AppLayout>
-                <Forecasting />
+                <EnhancedForecasting />
               </AppLayout>
             } />
             <Route path="/scenarios" element={

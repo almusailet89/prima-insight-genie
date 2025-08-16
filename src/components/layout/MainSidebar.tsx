@@ -29,7 +29,7 @@ const navigationItems = [
       { title: 'Overview Dashboard', url: '/', icon: Home },
       { title: 'Variance Analysis', url: '/variance', icon: BarChart },
       { title: 'Sales Analysis', url: '/sales', icon: TrendingUp },
-      { title: 'Forecasting', url: '/forecasting', icon: Calculator },
+      { title: 'Enhanced Forecasting', url: '/forecasting', icon: Calculator },
     ],
   },
   {
