@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Upload, FileText, Palette, Type, Download, Trash2, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useDropzone } from 'react-dropzone';
+import PrimaReportTemplates from '@/components/reports/PrimaReportTemplates';
 
 interface Template {
   id: string;
@@ -219,9 +221,21 @@ export default function Templates() {
       <div>
         <h1 className="text-3xl font-bold">Template Manager</h1>
         <p className="text-muted-foreground mt-2">
-          Upload and manage PowerPoint templates with Prima branding tokens
+          Manage Prima professional templates and upload custom PowerPoint templates
         </p>
       </div>
+
+      <Tabs defaultValue="prima-templates" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="prima-templates">Prima Professional Templates</TabsTrigger>
+          <TabsTrigger value="custom-templates">Custom Templates</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="prima-templates">
+          <PrimaReportTemplates />
+        </TabsContent>
+
+        <TabsContent value="custom-templates" className="space-y-6">
 
       {/* Upload Section */}
       <Card>
@@ -401,6 +415,8 @@ export default function Templates() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

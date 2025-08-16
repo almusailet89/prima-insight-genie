@@ -15,6 +15,7 @@ import Templates from "./pages/Templates";
 import ReportBuilder from "./pages/ReportBuilder";
 import FinancialRatios from "./pages/FinancialRatios";
 import NetSuiteIntegration from "./pages/NetSuiteIntegration";
+import AccountSettings from "./pages/AccountSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -80,6 +81,11 @@ export default function App() {
             <Route path="/netsuite" element={
               <AppLayout>
                 <NetSuiteIntegration />
+              </AppLayout>
+            } />
+            <Route path="/account-settings" element={
+              <AppLayout>
+                <AccountSettings />
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />

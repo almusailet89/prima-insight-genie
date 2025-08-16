@@ -39,6 +39,7 @@ const navigationItems = [
       { title: 'Financial Ratios', url: '/ratios', icon: Calculator },
       { title: 'NetSuite Integration', url: '/netsuite', icon: Settings },
       { title: 'Scenario Simulator', url: '/scenarios', icon: Users },
+      { title: 'Templates', url: '/templates', icon: Palette },
       { title: 'Reports & Narratives', url: '/reports', icon: FileText },
     ],
   },
@@ -46,7 +47,7 @@ const navigationItems = [
     title: 'Settings',
     items: [
       { title: 'Theme Manager', url: '/theme', icon: Palette },
-      { title: 'Account Settings', url: '/settings', icon: Settings },
+      { title: 'Account Settings', url: '/account-settings', icon: Settings },
     ],
   },
 ];
