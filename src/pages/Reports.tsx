@@ -25,7 +25,22 @@ export default function Reports() {
         </TabsList>
 
         <TabsContent value="builder">
-          <ReportBuilder />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Settings className="h-5 w-5" />
+                Advanced Report Builder
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground mb-4">
+                Build reports slide-by-slide with live preview and Ask Jude integration.
+              </p>
+              <Button onClick={() => window.location.href = '/report-builder'}>
+                Open Report Builder
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="quick">

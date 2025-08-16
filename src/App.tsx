@@ -11,6 +11,8 @@ import SalesAnalysis from "./pages/SalesAnalysis";
 import Forecasting from "./pages/Forecasting";
 import ImportData from "./pages/ImportData";
 import Reports from "./pages/Reports";
+import Templates from "./pages/Templates";
+import ReportBuilder from "./pages/ReportBuilder";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -56,6 +58,16 @@ export default function App() {
             <Route path="/reports" element={
               <AppLayout>
                 <Reports />
+              </AppLayout>
+            } />
+            <Route path="/templates" element={
+              <AppLayout>
+                <Templates />
+              </AppLayout>
+            } />
+            <Route path="/report-builder" element={
+              <AppLayout>
+                <ReportBuilder />
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />

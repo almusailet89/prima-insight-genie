@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_settings: {
+        Row: {
+          active_template_id: string | null
+          created_at: string | null
+          id: string
+          settings_json: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          active_template_id?: string | null
+          created_at?: string | null
+          id?: string
+          settings_json?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          active_template_id?: string | null
+          created_at?: string | null
+          id?: string
+          settings_json?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_settings_active_template_id_fkey"
+            columns: ["active_template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_log: {
         Row: {
           action: string
@@ -404,6 +439,44 @@ export type Database = {
           },
         ]
       }
+      report_blueprints: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          filters_json: Json | null
+          id: string
+          name: string
+          slides_json: Json | null
+          template_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          filters_json?: Json | null
+          id?: string
+          name: string
+          slides_json?: Json | null
+          template_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          filters_json?: Json | null
+          id?: string
+          name?: string
+          slides_json?: Json | null
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "report_blueprints_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       report_instances: {
         Row: {
           completed_at: string | null
@@ -450,6 +523,7 @@ export type Database = {
       }
       report_jobs: {
         Row: {
+          blueprint_id: string | null
           completed_at: string | null
           created_at: string
           created_by: string | null
@@ -457,9 +531,11 @@ export type Database = {
           id: string
           params_json: Json
           status: string
+          template_id: string | null
           title: string
         }
         Insert: {
+          blueprint_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -467,9 +543,11 @@ export type Database = {
           id?: string
           params_json: Json
           status: string
+          template_id?: string | null
           title: string
         }
         Update: {
+          blueprint_id?: string | null
           completed_at?: string | null
           created_at?: string
           created_by?: string | null
@@ -477,52 +555,89 @@ export type Database = {
           id?: string
           params_json?: Json
           status?: string
+          template_id?: string | null
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "report_jobs_blueprint_id_fkey"
+            columns: ["blueprint_id"]
+            isOneToOne: false
+            referencedRelation: "report_blueprints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "report_jobs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       report_templates: {
         Row: {
+          accent_color: string | null
+          body_font: string | null
           branding_config: Json
           chart_styles: Json
           company_name: string
           created_at: string
           created_by: string | null
           description: string | null
+          heading_font: string | null
           id: string
           is_default: boolean
+          layouts_json: Json | null
           name: string
+          primary_color: string | null
+          secondary_color: string | null
           slide_layouts: Json
+          storage_path: string | null
           table_styles: Json
           template_type: string
           updated_at: string
         }
         Insert: {
+          accent_color?: string | null
+          body_font?: string | null
           branding_config?: Json
           chart_styles?: Json
           company_name?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
+          heading_font?: string | null
           id?: string
           is_default?: boolean
+          layouts_json?: Json | null
           name: string
+          primary_color?: string | null
+          secondary_color?: string | null
           slide_layouts?: Json
+          storage_path?: string | null
           table_styles?: Json
           template_type?: string
           updated_at?: string
         }
         Update: {
+          accent_color?: string | null
+          body_font?: string | null
           branding_config?: Json
           chart_styles?: Json
           company_name?: string
           created_at?: string
           created_by?: string | null
           description?: string | null
+          heading_font?: string | null
           id?: string
           is_default?: boolean
+          layouts_json?: Json | null
           name?: string
+          primary_color?: string | null
+          secondary_color?: string | null
           slide_layouts?: Json
+          storage_path?: string | null
           table_styles?: Json
           template_type?: string
           updated_at?: string
