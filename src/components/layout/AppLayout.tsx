@@ -2,6 +2,7 @@ import { ReactNode, useState } from 'react';
 import { SidebarProvider } from '@/components/ui/sidebar';
 import { MainSidebar } from './MainSidebar';
 import { TopBar } from './TopBar';
+import { GlobalAskJude } from './GlobalAskJude';
 import { AskJudeModal } from '../ask-jude/AskJudeModal';
 
 interface AppLayoutProps {
