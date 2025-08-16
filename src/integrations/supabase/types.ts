@@ -115,6 +115,45 @@ export type Database = {
         }
         Relationships: []
       }
+      cost_monitoring: {
+        Row: {
+          actuals: number
+          budget: number
+          country: string | null
+          department: string
+          id: number
+          inserted_at: string
+          month: string
+          updated_at: string
+          variance: number | null
+          variance_pct: number | null
+        }
+        Insert: {
+          actuals?: number
+          budget?: number
+          country?: string | null
+          department: string
+          id?: never
+          inserted_at?: string
+          month: string
+          updated_at?: string
+          variance?: number | null
+          variance_pct?: number | null
+        }
+        Update: {
+          actuals?: number
+          budget?: number
+          country?: string | null
+          department?: string
+          id?: never
+          inserted_at?: string
+          month?: string
+          updated_at?: string
+          variance?: number | null
+          variance_pct?: number | null
+        }
+        Relationships: []
+      }
       dim_accounts: {
         Row: {
           code: string
@@ -290,6 +329,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      forecast_gwp: {
+        Row: {
+          contracts: number
+          country: string
+          growth_rate: number | null
+          gwp: number
+          id: number
+          inserted_at: string
+          month: string
+          updated_at: string
+        }
+        Insert: {
+          contracts?: number
+          country: string
+          growth_rate?: number | null
+          gwp?: number
+          id?: never
+          inserted_at?: string
+          month: string
+          updated_at?: string
+        }
+        Update: {
+          contracts?: number
+          country?: string
+          growth_rate?: number | null
+          gwp?: number
+          id?: never
+          inserted_at?: string
+          month?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
