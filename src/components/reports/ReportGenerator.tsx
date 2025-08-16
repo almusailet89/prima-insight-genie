@@ -10,7 +10,7 @@ import { useToast } from '@/components/ui/use-toast';
 
 export function ReportGenerator() {
   const [isGenerating, setIsGenerating] = useState(false);
-  const [selectedPeriod, setSelectedPeriod] = useState('');
+  const [selectedPeriod, setSelectedPeriod] = useState('all');
   const [selectedCountries, setSelectedCountries] = useState<string[]>(['Italy', 'UK', 'Spain']);
   const [reportTitle, setReportTitle] = useState('Prima Finance Monthly Report');
   const { toast } = useToast();
@@ -34,7 +34,7 @@ export function ReportGenerator() {
         },
         body: JSON.stringify({
           title: reportTitle,
-          period: selectedPeriod,
+          period: selectedPeriod === 'all' ? '' : selectedPeriod,
           countries: selectedCountries,
         }),
       });
@@ -101,7 +101,7 @@ export function ReportGenerator() {
               <SelectValue placeholder="Select period" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All periods</SelectItem>
+              <SelectItem value="all">All periods</SelectItem>
               <SelectItem value="2024-01-01">2024 YTD</SelectItem>
               <SelectItem value="2024-01-01">Q1 2024</SelectItem>
               <SelectItem value="2024-04-01">Q2 2024</SelectItem>
