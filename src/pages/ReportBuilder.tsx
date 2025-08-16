@@ -5,7 +5,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Download, Loader2, Settings, Undo2, Redo2, Save } from 'lucide-react';
+import { Download, Loader2, Settings, Undo2, Redo2, Save, FileDown } from 'lucide-react';
+import PptxGenJS from 'pptxgenjs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { SlidesPanel } from '@/components/reports/SlidesPanel';
@@ -53,6 +54,7 @@ export default function ReportBuilder() {
     period: { from: '2024-01-01', to: '2024-12-31' }
   });
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [history, setHistory] = useState<Slide[][]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   
@@ -318,6 +320,456 @@ export default function ReportBuilder() {
     }
   };
 
+  const downloadPPT = async () => {
+    if (!template) {
+      toast({
+        title: "No Template",
+        description: "Please set an active template in the Templates page",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDownloading(true);
+
+    try {
+      const pres = new PptxGenJS();
+      
+      // Set presentation properties with Prima branding
+      pres.author = 'Prima Assicurazioni';
+      pres.company = 'Prima';
+      pres.revision = '1';
+      pres.title = slides.find(s => s.type === 'title')?.title || 'Prima Finance Report';
+      pres.subject = 'Financial Analysis Report';
+
+      // Define Prima color scheme
+      const primaColors = {
+        primary: '#003366',
+        secondary: '#FF6B35', 
+        accent: '#E8F4FD',
+        text: '#2D3748',
+        lightGray: '#F7FAFC'
+      };
+
+      // Master layout settings
+      const layoutOpts = {
+        x: 0.5,
+        y: 0.5,
+        w: 9,
+        h: 6.5,
+        margin: 0.5
+      };
+
+      // Generate slides based on JSON structure
+      slides.forEach((slide, index) => {
+        const pptSlide = pres.addSlide();
+
+        switch (slide.type) {
+          case 'title':
+            generateTitleSlide(pptSlide, slide, primaColors);
+            break;
+          case 'kpi':
+            generateKPISlide(pptSlide, slide, primaColors, globalFilters);
+            break;
+          case 'variance':
+            generateVarianceSlide(pptSlide, slide, primaColors, globalFilters);
+            break;
+          case 'forecast':
+            generateForecastSlide(pptSlide, slide, primaColors, globalFilters);
+            break;
+          case 'narrative':
+            generateNarrativeSlide(pptSlide, slide, primaColors);
+            break;
+          case 'table':
+            generateTableSlide(pptSlide, slide, primaColors, globalFilters);
+            break;
+          case 'chart':
+            generateChartSlide(pptSlide, slide, primaColors, globalFilters);
+            break;
+          default:
+            generateGenericSlide(pptSlide, slide, primaColors);
+        }
+      });
+
+      // Generate and download
+      const fileName = `Prima_Monthly_Report_${new Date().toISOString().split('T')[0]}.pptx`;
+      await pres.writeFile({ fileName });
+
+      toast({
+        title: "Download Successful",
+        description: "PowerPoint file has been downloaded successfully",
+      });
+
+    } catch (error) {
+      console.error('Error downloading PPT:', error);
+      toast({
+        title: "Download Failed",
+        description: error instanceof Error ? error.message : 'Unknown error occurred',
+        variant: "destructive",
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  // Helper functions for slide generation
+  const generateTitleSlide = (slide: any, slideData: Slide, colors: any) => {
+    slide.background = { fill: colors.primary };
+    
+    // Prima logo placeholder (you can add actual logo later)
+    slide.addText('PRIMA', {
+      x: 0.5,
+      y: 1,
+      w: 9,
+      h: 1,
+      fontSize: 36,
+      bold: true,
+      color: 'FFFFFF',
+      fontFace: 'Segoe UI',
+      align: 'center'
+    });
+
+    // Main title
+    slide.addText(slideData.title || 'Prima Finance Report', {
+      x: 0.5,
+      y: 2.5,
+      w: 9,
+      h: 1.5,
+      fontSize: 32,
+      bold: true,
+      color: 'FFFFFF',
+      fontFace: 'Segoe UI',
+      align: 'center'
+    });
+
+    // Subtitle
+    slide.addText(slideData.subtitle || 'Financial Performance Analysis', {
+      x: 0.5,
+      y: 4,
+      w: 9,
+      h: 1,
+      fontSize: 18,
+      color: colors.accent,
+      fontFace: 'Segoe UI',
+      align: 'center'
+    });
+
+    // Date
+    slide.addText(new Date().toLocaleDateString('en-GB', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    }), {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 0.5,
+      fontSize: 14,
+      color: colors.accent,
+      fontFace: 'Segoe UI',
+      align: 'center'
+    });
+  };
+
+  const generateKPISlide = (slide: any, slideData: Slide, colors: any, filters: GlobalFilters) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    // Title
+    slide.addText(slideData.title || 'Key Performance Indicators', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    // Mock KPI data
+    const kpiData = [
+      ['Metric', 'Current', 'Target', 'Variance'],
+      ['GWP (€M)', '45.2', '42.0', '+7.6%'],
+      ['Claims Ratio', '68.5%', '70.0%', '-1.5%'],
+      ['Operating Ratio', '92.1%', '95.0%', '-2.9%'],
+      ['Revenue (€M)', '52.8', '50.0', '+5.6%']
+    ];
+
+    slide.addTable(kpiData, {
+      x: 0.5,
+      y: 2,
+      w: 9,
+      h: 3,
+      fontSize: 12,
+      fontFace: 'Segoe UI',
+      color: colors.text,
+      border: { pt: 1, color: colors.primary },
+      fill: { color: colors.lightGray },
+      rowH: 0.6
+    });
+
+    // Commentary
+    slide.addText(slideData.content || 'Strong performance across key metrics with GWP exceeding targets by 7.6%. Claims ratio remains well-controlled below target levels.', {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 1.5,
+      fontSize: 12,
+      color: colors.text,
+      fontFace: 'Segoe UI'
+    });
+  };
+
+  const generateVarianceSlide = (slide: any, slideData: Slide, colors: any, filters: GlobalFilters) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Variance Analysis', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    const varianceData = [
+      ['Department', 'Actual (€M)', 'Budget (€M)', 'Variance (€M)', 'Variance %'],
+      ['Motor Insurance', '28.5', '26.0', '+2.5', '+9.6%'],
+      ['Home Insurance', '12.3', '13.0', '-0.7', '-5.4%'],
+      ['Commercial', '8.7', '8.5', '+0.2', '+2.4%'],
+      ['Life Insurance', '6.2', '5.5', '+0.7', '+12.7%']
+    ];
+
+    slide.addTable(varianceData, {
+      x: 0.5,
+      y: 2,
+      w: 9,
+      h: 3,
+      fontSize: 11,
+      fontFace: 'Segoe UI',
+      color: colors.text,
+      border: { pt: 1, color: colors.primary },
+      fill: { color: colors.lightGray },
+      rowH: 0.6
+    });
+
+    slide.addText('Motor Insurance shows strongest positive variance (+9.6%) while Home Insurance is slightly below budget. Overall portfolio performance remains strong.', {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 1.5,
+      fontSize: 12,
+      color: colors.text,
+      fontFace: 'Segoe UI'
+    });
+  };
+
+  const generateForecastSlide = (slide: any, slideData: Slide, colors: any, filters: GlobalFilters) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Forecast Summary', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    const forecastData = [
+      ['Period', 'Forecast GWP (€M)', 'Growth %', 'Confidence'],
+      ['Q1 2025', '47.3', '+4.6%', '89%'],
+      ['Q2 2025', '49.1', '+8.6%', '85%'],
+      ['Q3 2025', '51.2', '+13.3%', '78%'],
+      ['Q4 2025', '52.8', '+16.8%', '72%']
+    ];
+
+    slide.addTable(forecastData, {
+      x: 0.5,
+      y: 2,
+      w: 9,
+      h: 3,
+      fontSize: 11,
+      fontFace: 'Segoe UI',
+      color: colors.text,
+      border: { pt: 1, color: colors.primary },
+      fill: { color: colors.lightGray },
+      rowH: 0.6
+    });
+
+    slide.addText('Forecast shows continued growth trajectory with average quarterly growth of 10.8%. Confidence levels remain strong in near-term projections.', {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 1.5,
+      fontSize: 12,
+      color: colors.text,
+      fontFace: 'Segoe UI'
+    });
+  };
+
+  const generateNarrativeSlide = (slide: any, slideData: Slide, colors: any) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Executive Summary', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    const content = slideData.content || `Prima Assicurazioni demonstrates strong financial performance across all key metrics this period. 
+
+• GWP growth of 7.6% exceeds targets, driven by motor insurance expansion
+• Claims ratio remains well-controlled at 68.5%, below the 70% target
+• Operating efficiency improvements result in 92.1% operating ratio
+• Revenue growth of 5.6% supports continued expansion plans
+
+The outlook remains positive with forecasted growth continuing into 2025, supported by market expansion and product diversification strategies.`;
+
+    slide.addText(content, {
+      x: 0.5,
+      y: 1.5,
+      w: 9,
+      h: 5,
+      fontSize: 14,
+      color: colors.text,
+      fontFace: 'Segoe UI',
+      lineSpacing: 20
+    });
+  };
+
+  const generateTableSlide = (slide: any, slideData: Slide, colors: any, filters: GlobalFilters) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Data Analysis', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    // Generate country breakdown based on selected countries
+    const countryData = [['Country', 'GWP (€M)', 'Claims (€M)', 'Profit (€M)']];
+    filters.countries.forEach(country => {
+      const gwp = (Math.random() * 20 + 10).toFixed(1);
+      const claims = (parseFloat(gwp) * 0.7).toFixed(1);
+      const profit = (parseFloat(gwp) * 0.15).toFixed(1);
+      countryData.push([country, gwp, claims, profit]);
+    });
+
+    slide.addTable(countryData, {
+      x: 0.5,
+      y: 2,
+      w: 9,
+      h: 3,
+      fontSize: 12,
+      fontFace: 'Segoe UI',
+      color: colors.text,
+      border: { pt: 1, color: colors.primary },
+      fill: { color: colors.lightGray },
+      rowH: 0.6
+    });
+
+    slide.addText('Country-level performance breakdown showing regional contribution to overall results.', {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 1,
+      fontSize: 12,
+      color: colors.text,
+      fontFace: 'Segoe UI'
+    });
+  };
+
+  const generateChartSlide = (slide: any, slideData: Slide, colors: any, filters: GlobalFilters) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Trend Analysis', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    // Add chart placeholder (PptxGenJS supports basic charts)
+    slide.addText('📈 Chart: Growth Trend Analysis', {
+      x: 0.5,
+      y: 2.5,
+      w: 9,
+      h: 2,
+      fontSize: 48,
+      color: colors.primary,
+      fontFace: 'Segoe UI',
+      align: 'center'
+    });
+
+    slide.addText('Monthly GWP growth showing consistent upward trend across all markets with Q4 acceleration.', {
+      x: 0.5,
+      y: 5.5,
+      w: 9,
+      h: 1,
+      fontSize: 12,
+      color: colors.text,
+      fontFace: 'Segoe UI'
+    });
+  };
+
+  const generateGenericSlide = (slide: any, slideData: Slide, colors: any) => {
+    slide.background = { fill: 'FFFFFF' };
+    
+    slide.addText(slideData.title || 'Slide', {
+      x: 0.5,
+      y: 0.5,
+      w: 9,
+      h: 0.8,
+      fontSize: 24,
+      bold: true,
+      color: colors.primary,
+      fontFace: 'Segoe UI'
+    });
+
+    if (slideData.subtitle) {
+      slide.addText(slideData.subtitle, {
+        x: 0.5,
+        y: 1.5,
+        w: 9,
+        h: 0.6,
+        fontSize: 16,
+        color: colors.text,
+        fontFace: 'Segoe UI'
+      });
+    }
+
+    if (slideData.content) {
+      slide.addText(slideData.content, {
+        x: 0.5,
+        y: 2.5,
+        w: 9,
+        h: 4,
+        fontSize: 14,
+        color: colors.text,
+        fontFace: 'Segoe UI'
+      });
+    }
+  };
+
   const handleCountryToggle = (country: string, checked: boolean) => {
     if (checked) {
       setGlobalFilters(prev => ({
@@ -407,6 +859,20 @@ export default function ReportBuilder() {
               <>
                 <Download className="h-4 w-4 mr-2" />
                 Generate PPT
+              </>
+            )}
+          </Button>
+          
+          <Button onClick={downloadPPT} disabled={isDownloading || slides.length === 0} variant="outline">
+            {isDownloading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Downloading...
+              </>
+            ) : (
+              <>
+                <FileDown className="h-4 w-4 mr-2" />
+                Download PPT
               </>
             )}
           </Button>
