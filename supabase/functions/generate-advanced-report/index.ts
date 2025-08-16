@@ -103,7 +103,7 @@ serve(async (req) => {
 async function fetchGWPData(supabase: any, config: ReportConfig) {
   let query = supabase.from('forecast_gwp').select('*');
   
-  if (config.countries.length > 0) {
+  if (config.countries && config.countries.length > 0) {
     query = query.in('country', config.countries);
   }
   if (config.period) {
@@ -118,7 +118,7 @@ async function fetchGWPData(supabase: any, config: ReportConfig) {
 async function fetchCostData(supabase: any, config: ReportConfig) {
   let query = supabase.from('cost_monitoring').select('*');
   
-  if (config.countries.length > 0) {
+  if (config.countries && config.countries.length > 0) {
     query = query.in('country', config.countries);
   }
   if (config.period) {
@@ -134,7 +134,7 @@ async function fetchForecastData(supabase: any, config: ReportConfig) {
   // Fetch additional forecast and scenario data
   let query = supabase.from('forecast_gwp').select('*').order('month', { ascending: true });
   
-  if (config.countries.length > 0) {
+  if (config.countries && config.countries.length > 0) {
     query = query.in('country', config.countries);
   }
   
