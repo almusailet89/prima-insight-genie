@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AppLayout } from "./components/layout/AppLayout";
 import OverviewDashboard from "./pages/OverviewDashboard";
 import VarianceAnalysis from "./pages/VarianceAnalysis";
+import ScenarioSimulator from "./pages/ScenarioSimulator";
+import SalesAnalysis from "./pages/SalesAnalysis";
+import Forecasting from "./pages/Forecasting";
+import ImportData from "./pages/ImportData";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -26,6 +30,26 @@ export default function App() {
             <Route path="/variance" element={
               <AppLayout>
                 <VarianceAnalysis />
+              </AppLayout>
+            } />
+            <Route path="/sales" element={
+              <AppLayout>
+                <SalesAnalysis />
+              </AppLayout>
+            } />
+            <Route path="/forecasting" element={
+              <AppLayout>
+                <Forecasting />
+              </AppLayout>
+            } />
+            <Route path="/scenarios" element={
+              <AppLayout>
+                <ScenarioSimulator />
+              </AppLayout>
+            } />
+            <Route path="/import" element={
+              <AppLayout>
+                <ImportData />
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />
