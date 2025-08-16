@@ -2,6 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.7.1';
 
+// Import pptxgenjs for PowerPoint generation
+const PptxGenJS = (await import('https://esm.sh/pptxgenjs@3.12.0')).default;
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -66,17 +69,21 @@ serve(async (req) => {
       slides: await generateSlides(config, gwpData, costData, forecastData, insights)
     };
 
-    // In production, this would generate actual PowerPoint using a library like pptxgenjs
-    // For now, we simulate the process and return structured data
-    const simulatedPowerPointGeneration = await simulatePowerPointGeneration(reportData, config);
+    // Generate actual PowerPoint using pptxgenjs with Prima branding
+    const powerPointBuffer = await generateActualPowerPoint(reportData, config);
+
+    // Convert buffer to base64 for download
+    const base64Data = btoa(String.fromCharCode(...new Uint8Array(powerPointBuffer)));
+    const downloadUrl = `data:application/vnd.openxmlformats-officedocument.presentationml.presentation;base64,${base64Data}`;
 
     return new Response(JSON.stringify({
       success: true,
       reportData,
-      downloadUrl: simulatedPowerPointGeneration.downloadUrl,
-      fileSize: simulatedPowerPointGeneration.fileSize,
+      downloadUrl: downloadUrl,
+      fileSize: powerPointBuffer.byteLength,
       slideCount: reportData.slides.length,
-      message: 'Advanced report generated successfully with AI insights and Prima branding'
+      fileName: `${config.title.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pptx`,
+      message: 'PowerPoint report generated successfully with Prima branding'
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -544,20 +551,294 @@ function calculateSensitivityAnalysis(gwpData: any[]) {
   };
 }
 
-async function simulatePowerPointGeneration(reportData: any, config: ReportConfig) {
-  // In a real implementation, this would use a library like pptxgenjs to create actual PowerPoint files
-  // For development, we'll simulate the process
+async function generateActualPowerPoint(reportData: any, config: ReportConfig): Promise<ArrayBuffer> {
+  try {
+    // Create new PowerPoint presentation with Prima branding
+    const pptx = new PptxGenJS();
+    
+    // Set presentation properties
+    pptx.author = 'Prima Finance';
+    pptx.company = 'Prima';
+    pptx.title = config.title;
+    pptx.subject = 'Financial Analysis Report';
+    
+    // Apply Prima master slide design
+    pptx.defineSlideMaster({
+      title: 'PRIMA_MASTER',
+      background: { fill: config.branding.backgroundColor || '#FFFFFF' },
+      objects: [
+        // Prima logo placeholder (top-left)
+        {
+          rect: {
+            x: 0.5, y: 0.3, w: 1.5, h: 0.8,
+            fill: { color: config.branding.primaryColor || '#003366' }
+          }
+        },
+        // Footer with Prima branding
+        {
+          text: {
+            text: config.branding.footerText || 'Prima Finance - Confidential',
+            options: {
+              x: 0.5, y: 6.8, w: 9, h: 0.4,
+              fontSize: 10,
+              color: config.branding.textColor || '#333333',
+              align: 'center',
+              fontFace: config.branding.fontFamily || 'Segoe UI'
+            }
+          }
+        }
+      ]
+    });
+
+    // Generate slides based on report data
+    for (const slide of reportData.slides) {
+      await addSlideToPresentation(pptx, slide, config);
+    }
+
+    // Generate PowerPoint buffer
+    const buffer = await pptx.write('BINARY');
+    return new Uint8Array(buffer).buffer;
+
+  } catch (error) {
+    console.error('PowerPoint generation error:', error);
+    throw new Error(`Failed to generate PowerPoint: ${error.message}`);
+  }
+}
+
+async function addSlideToPresentation(pptx: any, slideData: any, config: ReportConfig) {
+  const slide = pptx.addSlide({ masterName: 'PRIMA_MASTER' });
   
-  const slideCount = reportData.slides.length;
-  const estimatedFileSize = slideCount * 150000; // ~150KB per slide estimate
-  
-  // Simulate processing time
-  await new Promise(resolve => setTimeout(resolve, 1000 + slideCount * 200));
-  
-  return {
-    downloadUrl: null, // Would contain actual file URL in production
-    fileSize: estimatedFileSize,
-    slideCount: slideCount,
-    processingTime: 1000 + slideCount * 200
-  };
+  const primaryColor = config.branding.primaryColor || '#003366';
+  const secondaryColor = config.branding.secondaryColor || '#FF6B35';
+  const textColor = config.branding.textColor || '#333333';
+  const fontFamily = config.branding.fontFamily || 'Segoe UI';
+
+  switch (slideData.type) {
+    case 'title':
+      // Title slide
+      slide.addText(slideData.title, {
+        x: 1, y: 2, w: 8, h: 1.5,
+        fontSize: 32,
+        bold: true,
+        color: primaryColor,
+        align: 'center',
+        fontFace: fontFamily
+      });
+      
+      slide.addText(slideData.subtitle || 'Prima Finance Analysis', {
+        x: 1, y: 3.8, w: 8, h: 0.8,
+        fontSize: 18,
+        color: secondaryColor,
+        align: 'center',
+        fontFace: fontFamily
+      });
+      
+      slide.addText(new Date().toLocaleDateString(), {
+        x: 1, y: 4.8, w: 8, h: 0.5,
+        fontSize: 14,
+        color: textColor,
+        align: 'center',
+        fontFace: fontFamily
+      });
+      break;
+
+    case 'overview':
+      // Executive Overview slide
+      slide.addText(slideData.title, {
+        x: 0.5, y: 0.5, w: 9, h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: primaryColor,
+        fontFace: fontFamily
+      });
+
+      // KPI boxes
+      const kpis = slideData.kpis || {};
+      const kpiData = [
+        { label: 'Total GWP', value: `€${((kpis.total_gwp || 0) / 1000000).toFixed(1)}M` },
+        { label: 'Growth Rate', value: `${(kpis.growth_rate || 0).toFixed(1)}%` },
+        { label: 'Cost Ratio', value: `${((kpis.cost_ratio || 0) * 100).toFixed(1)}%` },
+        { label: 'Profitability', value: `${((kpis.profitability_index || 0) * 100).toFixed(1)}%` }
+      ];
+
+      kpiData.forEach((kpi, index) => {
+        const x = 0.5 + (index * 2.25);
+        slide.addShape(pptx.ShapeType.rect, {
+          x: x, y: 1.5, w: 2, h: 1.2,
+          fill: { color: primaryColor, transparency: 10 },
+          line: { color: primaryColor, width: 1 }
+        });
+        
+        slide.addText(kpi.value, {
+          x: x, y: 1.7, w: 2, h: 0.5,
+          fontSize: 20,
+          bold: true,
+          color: primaryColor,
+          align: 'center',
+          fontFace: fontFamily
+        });
+        
+        slide.addText(kpi.label, {
+          x: x, y: 2.3, w: 2, h: 0.3,
+          fontSize: 10,
+          color: textColor,
+          align: 'center',
+          fontFace: fontFamily
+        });
+      });
+
+      // Commentary
+      if (slideData.commentary) {
+        slide.addText(slideData.commentary, {
+          x: 0.5, y: 3.2, w: 9, h: 2,
+          fontSize: 12,
+          color: textColor,
+          fontFace: fontFamily,
+          valign: 'top'
+        });
+      }
+      break;
+
+    case 'country_analysis':
+      // Country Analysis slide
+      slide.addText(slideData.title, {
+        x: 0.5, y: 0.5, w: 9, h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: primaryColor,
+        fontFace: fontFamily
+      });
+
+      // Country performance table
+      if (slideData.countries && slideData.countries.length > 0) {
+        const tableData = [
+          ['Country', 'GWP (€M)', 'Trend', 'Performance']
+        ];
+        
+        slideData.countries.forEach((country: any) => {
+          tableData.push([
+            country.name,
+            `€${((country.gwp || 0) / 1000000).toFixed(1)}M`,
+            country.trends?.trend || 'Stable',
+            country.trends?.change > 0 ? `+${country.trends.change.toFixed(1)}%` : `${country.trends?.change?.toFixed(1) || '0.0'}%`
+          ]);
+        });
+
+        slide.addTable(tableData, {
+          x: 0.5, y: 1.5, w: 9, h: 3,
+          fontSize: 11,
+          fontFace: fontFamily,
+          color: textColor,
+          fill: { color: 'F8F9FA' },
+          border: { pt: 1, color: primaryColor }
+        });
+      }
+      break;
+
+    case 'variance_analysis':
+      // Variance Analysis slide
+      slide.addText(slideData.title, {
+        x: 0.5, y: 0.5, w: 9, h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: primaryColor,
+        fontFace: fontFamily
+      });
+
+      // Variance table
+      if (slideData.data && slideData.data.length > 0) {
+        const tableData = [
+          ['Department', 'Country', 'Actual', 'Budget', 'Variance', 'Variance %']
+        ];
+        
+        slideData.data.slice(0, 8).forEach((item: any) => {
+          tableData.push([
+            item.department || 'N/A',
+            item.country || 'N/A',
+            `€${((item.actuals || 0) / 1000).toFixed(0)}K`,
+            `€${((item.budget || 0) / 1000).toFixed(0)}K`,
+            `€${((item.variance || 0) / 1000).toFixed(0)}K`,
+            `${(item.variance_percent || 0).toFixed(1)}%`
+          ]);
+        });
+
+        slide.addTable(tableData, {
+          x: 0.5, y: 1.5, w: 9, h: 4,
+          fontSize: 10,
+          fontFace: fontFamily,
+          color: textColor,
+          fill: { color: 'F8F9FA' },
+          border: { pt: 1, color: primaryColor }
+        });
+      }
+      break;
+
+    case 'forecast_trends':
+      // Forecast slide
+      slide.addText(slideData.title, {
+        x: 0.5, y: 0.5, w: 9, h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: primaryColor,
+        fontFace: fontFamily
+      });
+
+      // Forecast chart placeholder
+      slide.addShape(pptx.ShapeType.rect, {
+        x: 1, y: 1.5, w: 8, h: 3,
+        fill: { color: primaryColor, transparency: 95 },
+        line: { color: primaryColor, width: 1 }
+      });
+      
+      slide.addText('Forecast Chart\n(Data visualization would appear here)', {
+        x: 1, y: 2.5, w: 8, h: 1,
+        fontSize: 14,
+        color: primaryColor,
+        align: 'center',
+        fontFace: fontFamily
+      });
+
+      // Recommendations
+      if (slideData.recommendations) {
+        slide.addText('Key Recommendations:', {
+          x: 0.5, y: 4.8, w: 9, h: 0.4,
+          fontSize: 14,
+          bold: true,
+          color: primaryColor,
+          fontFace: fontFamily
+        });
+        
+        const recommendations = slideData.recommendations.slice(0, 3).map((rec: string, index: number) => 
+          `${index + 1}. ${rec}`
+        ).join('\n');
+        
+        slide.addText(recommendations, {
+          x: 0.5, y: 5.3, w: 9, h: 1.5,
+          fontSize: 11,
+          color: textColor,
+          fontFace: fontFamily
+        });
+      }
+      break;
+
+    default:
+      // Generic slide
+      slide.addText(slideData.title || 'Analysis Slide', {
+        x: 0.5, y: 0.5, w: 9, h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: primaryColor,
+        fontFace: fontFamily
+      });
+      
+      slide.addText('Content for this slide type would appear here.', {
+        x: 0.5, y: 2, w: 9, h: 3,
+        fontSize: 14,
+        color: textColor,
+        fontFace: fontFamily,
+        align: 'center',
+        valign: 'middle'
+      });
+      break;
+  }
 }

@@ -233,12 +233,17 @@ export function ReportBuilder() {
         description: "Your Prima Finance report has been generated successfully.",
       });
       
-      // Trigger download
+      // Trigger download with proper filename
       if (response.data?.downloadUrl) {
+        const fileName = response.data.fileName || `${reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pptx`;
+        
+        // Create download link for the base64 data
         const link = document.createElement('a');
         link.href = response.data.downloadUrl;
-        link.download = `${reportTitle.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pptx`;
+        link.download = fileName;
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
       } else {
         // Fallback: Create JSON download for development
         const dataStr = JSON.stringify(response.data, null, 2);
