@@ -31,14 +31,16 @@ export default function QAStatus() {
     try {
       // 1. Database Tables Check
       const tables = [
-        'companies', 'business_units', 'products', 'periods', 'overview_kpis',
-        'variance_records', 'sales_facts', 'scenarios', 'forecast_facts',
-        'ratios_facts', 'narratives', 'report_templates', 'report_exports'
+        'companies', 'business_units', 'report_templates', 'app_settings',
+        'audit_log', 'calendar', 'cost_monitoring', 'dim_accounts',
+        'dim_channels', 'dim_cost_centers', 'dim_markets', 'dim_products',
+        'fact_ledger', 'forecast_gwp', 'profiles', 'report_blueprints',
+        'report_instances', 'report_jobs', 'scenario_inputs', 'template_assets'
       ];
 
       for (const table of tables) {
         try {
-          const { data, error } = await supabase.from(table).select('*').limit(1);
+          const { data, error } = await supabase.from(table as any).select('*').limit(1);
           results.push({
             category: 'Database',
             test: `Table: ${table}`,
