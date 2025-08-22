@@ -22,7 +22,7 @@ import {
   Calendar,
   MapPin
 } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { ReportPreview } from './ReportPreview';
 
