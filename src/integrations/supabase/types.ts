@@ -160,6 +160,7 @@ export type Database = {
         Row: {
           actuals: number
           budget: number
+          company_id: string
           country: string | null
           department: string
           id: number
@@ -172,6 +173,7 @@ export type Database = {
         Insert: {
           actuals?: number
           budget?: number
+          company_id: string
           country?: string | null
           department: string
           id?: never
@@ -184,6 +186,7 @@ export type Database = {
         Update: {
           actuals?: number
           budget?: number
+          company_id?: string
           country?: string | null
           department?: string
           id?: never
@@ -193,7 +196,15 @@ export type Database = {
           variance?: number | null
           variance_pct?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "cost_monitoring_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       dim_accounts: {
         Row: {
