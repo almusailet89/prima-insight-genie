@@ -1,38 +1,34 @@
-import { Search, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { useTheme } from '@/components/ui/theme-provider';
+import { Sun, Moon } from 'lucide-react';
 
-interface TopBarProps {
-  onOpenAskJude: () => void;
-}
+export function TopBar() {
+  const { theme, setTheme } = useTheme();
 
-export function TopBar({ onOpenAskJude }: TopBarProps) {
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+
   return (
-    <header className="h-16 border-b bg-background flex items-center justify-between px-4">
-      <div className="flex items-center gap-4">
-        <SidebarTrigger />
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <header className="h-16 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
+      <div className="flex items-center justify-between h-full px-6">
+        <div className="flex items-center gap-4">
+          <SidebarTrigger />
+        </div>
+        
+        <div className="flex items-center gap-3">
           <Button
-            variant="outline"
-            className="w-96 justify-start text-muted-foreground pl-10"
-            onClick={onOpenAskJude}
+            variant="ghost"
+            size="sm"
+            onClick={toggleTheme}
+            className="w-9 h-9 rounded-xl"
           >
-            Ask Jude anything about your finances...
+            <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
           </Button>
         </div>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Button
-          variant="default"
-          size="sm"
-          onClick={onOpenAskJude}
-          className="gap-2"
-        >
-          <Bot className="h-4 w-4" />
-          Ask Jude
-        </Button>
       </div>
     </header>
   );
