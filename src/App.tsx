@@ -3,8 +3,9 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AppLayout } from "./components/layout/AppLayout";
-import OverviewDashboard from "./pages/OverviewDashboard";
+import { ThemeProvider } from "@/components/ui/theme-provider";
+import { AppLayout } from "@/components/layout/AppLayout";
+import Index from "@/pages/Index";
 import VarianceAnalysis from "./pages/VarianceAnalysis";
 import ScenarioSimulator from "./pages/ScenarioSimulator";
 import SalesAnalysis from "./pages/SalesAnalysis";
@@ -22,15 +23,18 @@ const queryClient = new QueryClient();
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
+    <ThemeProvider defaultTheme="light"
+      storageKey="prima-ui-theme"
+    >
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
             <Route path="/" element={
               <AppLayout>
-                <OverviewDashboard />
+                <Index />
               </AppLayout>
             } />
             <Route path="/variance" element={
@@ -89,9 +93,10 @@ export default function App() {
               </AppLayout>
             } />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }
